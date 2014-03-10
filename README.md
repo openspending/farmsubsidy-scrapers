@@ -8,6 +8,11 @@ The FarmSubsidy data is mostly scraped from member state websites. The old scrap
 Please have a look at the [member state scraper issues](https://github.com/openspending/farmsubsidy-scrapers/issues?labels=memberstate&page=1&state=open). If you can help provide a scraper that would be awesome.
 
 
+Developer Documentation
+-----------------------
+
+More extensive developer documentation is just being build up at http://farmsubsidy.readthedocs.org.
+
 Background Information
 ----------------------
 
