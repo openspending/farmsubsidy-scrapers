@@ -4,3 +4,4 @@
 .project
 .pydevproject
 .settings
+scrapy_fs/*.txt

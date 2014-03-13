@@ -1,4 +1,4 @@
-Scraper for {{ Country }}
-=========================
+Scraper for United Kingdom
+==========================
 
-No scraper available yet.
+Scraper build using Scrapy, see ''scrapy_fs/scrapy_fs/spiders/uk_spider.py``.
