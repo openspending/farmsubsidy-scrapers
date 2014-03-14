@@ -6,16 +6,16 @@ from scrapy.selector import Selector
 from scrapy_fs.items import ScrapyFsItem
 from scrapy.contrib.loader import ItemLoader
 
-class UkSpider(Spider):
+class GbSpider(Spider):
     '''
     WORK IN PROGRESS... (2014-03-13)
     Author   : Holger Drewes (@HolgerD77)
     Creation : 2014-03-13 
     Updated  : -
-    Command  : "scrapy crawl UK -a year=YEAR"
+    Command  : "scrapy crawl GB -a year=YEAR"
     '''
     
-    name = "UK"
+    name = "GB"
     allowed_domains = ["defra.gov.uk"]
     start_urls = [
         "http://cap-payments.defra.gov.uk/",
