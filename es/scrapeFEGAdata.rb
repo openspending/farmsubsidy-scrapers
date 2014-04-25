@@ -13,7 +13,7 @@ def clean (c,i)
   if (i == 0)
     return c.text.gsub('.','').to_i  
   elsif (i > 0 && i < 4)
-    return c.text.empty? ? nil : UnicodeUtils.downcase(c.text.strip, :es)
+    return c.text.empty? ? nil : UnicodeUtils.upcase(c.text.strip, :es)
   else 
     return c.text.gsub('.','').gsub(',','.').to_f  
   end
@@ -34,29 +34,29 @@ end
 
 #Create one line per subsidy type if found
 def save_csv_data (a)
-  geo1 = a[3] ? "ES" : nil
+  rAddress2 = a[3] ? "ES" : nil
   
   #EAGF DIRECT PAYMENTS
   if (a[4] && a[4] > 0)
     amount = a[4]
-    type = "ES1"
-    data = [$id,a[1..3],geo1,type,YEAR,amount,CURRENCY].flatten!
+    scheme = "ES1"
+    data = [a[1..2],rAddress2,nil,a[3],scheme,amount,nil].flatten!
     $output_file.puts CSV::generate_line(data,:encoding => 'utf-8')
     $id += 1
   end
   #EAGF OTHER PAYMENTS
   if a[5] && a[5] > 0
     amount = a[5]
-    type = "ES2"
-    data = [$id,a[1..3],geo1,type,YEAR,amount,CURRENCY].flatten!
+    scheme = "ES2"
+    data = [a[1..2],rAddress2,nil,a[3],scheme,amount,nil].flatten!
     $output_file.puts CSV::generate_line(data,:encoding => 'utf-8')
     $id += 1
   end
   #EAFRD PAYMENTS
   if a[6] && a[6] > 0
     amount = a[6]
-    type = "ES3"
-    data = [$id,a[1..3],geo1,type,YEAR,amount,CURRENCY].flatten!
+    scheme = "ES3"
+    data = [a[1..2],rAddress2,nil,a[3],scheme,amount,nil].flatten!
     $output_file.puts CSV::generate_line(data,:encoding => 'utf-8')
     $id += 1
   end
@@ -79,7 +79,7 @@ HOME_URL = 'https://www.sede.fega.gob.es'
 PREFFIX_URL = '/pwffgt/fgp_consultas_bene_tridion.mostrar_resultado'\
               '?w_cod_prov=99&w_cod_muni=00&pRegPag=1000&w_ordenar=3'
 #Headers for the output file
-HEADERS = ["id","name","geo2","geo3","geo1","type","year","amount","currency"]
+HEADERS = ["rName","rAddress1","rAddress2","rZipcode","rTown","globalSchemeId","amountEuro","amountNationalCurrency"]
           
 #Extract script name
 $0 =~ /^.*\/(.*)\.rb/
@@ -91,7 +91,7 @@ end
 
 #Create the log and output files
 log_file = File.open("#{LOG_SUBDIR}/#{YEAR}#{script_name}.log", 'w')
-$output_file = File.open("#{OUTPUT_SUBDIR}/#{YEAR}#{script_name}.csv", 'w')
+$output_file = File.open("#{OUTPUT_SUBDIR}/payment_#{YEAR}.csv", 'w')
 #Write the header to the output file
 $output_file.puts CSV::generate_line(HEADERS,:encoding => 'utf-8')
 

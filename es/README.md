@@ -14,7 +14,9 @@ Right now the information is available for 2010, 2011 and 2012
 
 The script expects a year as an input parameter and scrapes the data for that year into a CSV file inside the data folder (automatically created)
 
-The nomenclature of the output file starts with the year and then the script name, i.e.: 2012scrapeFEGAdata.csv for 2012
+All texts are uppercased, names, address, town, etc.
+
+The nomenclature of the output file is payment_YEAR.csv, i.e.: payment_2013.csv for 2013
 
 If some unexpected behaviour is found the script logs the details inside the logs folder (automatically created)
 
@@ -33,6 +35,6 @@ Rake file
 
 * To run the script
 
-    $ rake scrape:subsidies[2012]
+    $ rake scrape:subsidies[2013]
 
 
