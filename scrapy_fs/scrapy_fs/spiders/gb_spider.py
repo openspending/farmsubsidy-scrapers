@@ -1,6 +1,6 @@
 import re
 from scrapy.exceptions import CloseSpider
-from scrapy.http import FormRequest
+from scrapy.http import FormRequest, Request
 from scrapy.spider import Spider
 from scrapy.selector import Selector
 from scrapy_fs.items import ScrapyFsItem
@@ -8,11 +8,10 @@ from scrapy.contrib.loader import ItemLoader
 
 class GbSpider(Spider):
     '''
-    WORK IN PROGRESS... (2014-03-13)
     Author   : Holger Drewes (@HolgerD77)
     Creation : 2014-03-13 
     Updated  : -
-    Command  : "scrapy crawl GB -a year=YEAR"
+    Command  : "scrapy crawl GB -a year=YEAR [-a num_pages=PAGES_TO_CRAWL] [-o payment_YEAR.txt -t csv]"
     '''
     
     name = "GB"
@@ -25,20 +24,23 @@ class GbSpider(Spider):
         if kwargs.get('year'):
             self.year = kwargs.get('year')
         else:
-            raise CloseSpider("Please provide a year in the form: -a year=YEAR")        
+            raise CloseSpider("Please provide a year in the form: -a year=YEAR")
+        if kwargs.get('num_pages'):
+            self.num_pages = int(kwargs.get('num_pages'))    
     
     def parse(self, response):
-        return [FormRequest.from_response(response,
+        request = FormRequest.from_response(response,
                 formdata={ 
                     'ctl00$Center$ContentPlaceHolder1$SearchControls1$ddlFinancialYear' : self.year,
                 },
                 formnumber=1,
-                callback=self.after_form_submit)]
+                callback=self.after_form_submit)
+        request.meta['page'] = 1
+        return [request]
     
     def after_form_submit(self, response):
-        filename = response.url.split("/")[-2]
-        open(filename, 'wb').write(response.body)
-        
+        page = response.request.meta['page']
+        print "Crawling page %d..." % page
         sel = Selector(response)
         entries = sel.xpath('//table[@class="resultstable"]/tr')
         
@@ -47,12 +49,10 @@ class GbSpider(Spider):
         #"GB2";;"Other payments under European Agricultural Guarantee Fund";;"GB"
         #"GB3";;"European Agricultural Fund for Rural Development";;"GB"
         schemes = [
-            (u'GB1', '4'),
-            #(u'GB2', '5'),
-            #(u'GB3', '6'),
+            (u'GB1', '5'),
+            (u'GB3', '4'),
         ]
         
-        items = []
         for entry in entries:
             for scheme in schemes:
                 l = ItemLoader(ScrapyFsItem(), entry)
@@ -68,9 +68,19 @@ class GbSpider(Spider):
                         amount_float = float(amount_str)
                         if amount_float > 0:
                             l.add_value('amountNationalCurrency', amount_float)
-                            items.append(l.load_item())
+                            yield l.load_item()
                     except ValueError:
                         continue
         
-        return items
+        new_page = page + 1
+        load_next = True
+        if hasattr(self, 'num_pages') and self.num_pages < new_page:
+            load_next = False
+        
+        if len(entries) > 0 and load_next:
+            url = 'http://cap-payments.defra.gov.uk/SearchResults.aspx?Page=%d&Sort=' % new_page
+            request = Request(url, callback=self.after_form_submit)
+            request.meta['page'] = new_page
+        
+            yield request
     

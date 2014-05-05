@@ -20,6 +20,4 @@ class FormatValidationPipeline(object):
            ('amountNationalCurrency' not in item or item['amountNationalCurrency'] == None):
             raise DropItem("Item %s missing both amountEuro and amountNationalCurrency" % item)
         
-        print type(item['amountNationalCurrency'])
-        
         return item
