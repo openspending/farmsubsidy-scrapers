@@ -1,0 +1,15 @@
+require 'pty'
+
+namespace 'scrape' do
+  desc "Scrape spanish EAGF & EAFRD subsidy payments"
+  task :subsidies, :year do |t, args|
+    puts "Scrape EAGF & EAFRD payments for year #{args.year} ..."
+    begin
+      PTY.spawn("#{File.dirname(__FILE__)}/scrapeFEGAdata.rb #{args.year}") do |stdin, stdout, pid|
+        stdin.each { |line| puts line }
+      end
+    rescue PTY::ChildExited
+      puts "The child process exited!"
+    end
+  end
+end
