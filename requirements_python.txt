@@ -16,9 +16,9 @@
 ##ES (added 2014-01-23, @Fabricio2394)
 #lxml==3.3
 
-
-
-
-
-
-
+#AT
+cssselect==0.7.1
+ipython==0.13.1
+lxml==3.0.1
+pyquery==1.2.4
+requests==0.14.2
