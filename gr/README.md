@@ -1,4 +1,6 @@
-Scraper for {{ Country }}
+Scraper for Greece
 =========================
 
-No scraper available yet.
+<http://transpay.opekepe.gr/>
+
+Work in progress spider in scrapy_fs dir.
