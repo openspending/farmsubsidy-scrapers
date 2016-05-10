@@ -4,4 +4,5 @@
 .project
 .pydevproject
 .settings
-scrapy_fs/*.txt
+*.csv
+.ipynb_checkpoints
