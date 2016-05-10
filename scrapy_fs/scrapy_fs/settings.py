@@ -10,10 +10,11 @@ BOT_NAME = 'scrapy_fs'
 
 SPIDER_MODULES = ['scrapy_fs.spiders']
 NEWSPIDER_MODULE = 'scrapy_fs.spiders'
+# AUTOTHROTTLE_ENABLED = True
 
-ITEM_PIPELINES = {
-    'scrapy_fs.pipelines.FormatValidationPipeline': 100,
-}
+# ITEM_PIPELINES = {
+#     'scrapy_fs.pipelines.FormatValidationPipeline': 100,
+# }
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'scrapy_fs (+http://www.yourdomain.com)'
