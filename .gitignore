@@ -5,4 +5,6 @@
 .pydevproject
 .settings
 *.csv
+*.xls
+*.xlsx
 .ipynb_checkpoints
