@@ -1,4 +1,6 @@
-Scraper for {{ Country }}
+Scraper for Germany
 =========================
 
-No scraper available yet.
+<http://www.agrar-fischerei-zahlungen.de/>
+
+Scrapa scraper is available.
