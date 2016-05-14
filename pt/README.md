@@ -6,4 +6,4 @@ Scraper for Portugal
 Full CSV:
 <https://aplj13.ifap.min-agricultura.pt/idigital.consultarFundos//pub/FEAGA_FEADER_2014.zip>
 
-No scraper available yet.
+Jupyter notebook for CSV conversion.
