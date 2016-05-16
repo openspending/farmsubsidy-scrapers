@@ -4,4 +4,4 @@ Scraper for Poland
 <http://beneficjenciwpr.minrol.gov.pl/search>
 
 
-No scraper available yet.
+Scrapy scraper available. Site is unreliable though.
