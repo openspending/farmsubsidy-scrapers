@@ -1,4 +1,4 @@
 Scraper for Malta
 =========================
 
-No scraper available yet.
+Scrapy scraper available. But very slow.
