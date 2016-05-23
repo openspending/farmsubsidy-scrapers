@@ -9,7 +9,7 @@ from scrapy.item import Item, Field
 
 class FarmSubsidyItem(Item):
     year = Field()
-    country = Field()
+    country = Field()  # Two letters ISO 3166
     recipient_id = Field()
     recipient_name = Field()
     recipient_address = Field()
