@@ -5,6 +5,7 @@
 # http://doc.scrapy.org/en/latest/topics/items.html
 
 from scrapy.item import Item, Field
+from scrapy.loader import ItemLoader
 
 
 class FarmSubsidyItem(Item):
@@ -20,3 +21,7 @@ class FarmSubsidyItem(Item):
     scheme = Field()
     amount = Field()
     currency = Field()
+
+
+class CroatiaItemLoader(ItemLoader):
+    pass

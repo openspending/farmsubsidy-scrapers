@@ -5,7 +5,7 @@ from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy.shell import inspect_response
 
-from scrapy_fs.items import CroatianLoader, FarmSubsidyItem
+from scrapy_fs.items import CroatiaItemLoader, FarmSubsidyItem
 
 
 class CroatiaSpider(CrawlSpider):
@@ -51,7 +51,7 @@ class CroatiaSpider(CrawlSpider):
 
         for row in table.xpath(self.X_ROWS):
             reference = row.xpath(self.X_REFERENCE).extract_first()
-            item = CroatianLoader(selector=row, item=FarmSubsidyItem())
+            item = CroatiaItemLoader(selector=row, item=FarmSubsidyItem())
 
             item.add_value('recipient_id', reference)
             item.add_xpath('recipient_name', self.X_COMPANY)
