@@ -22,9 +22,9 @@ class CroatiaSpider(CrawlSpider):
     X_TABLE = r'//tbody'
     X_ROWS = r'.//tr'
     X_REFERENCE = r'.//td[1]/text()'
-    X_CITY = r'.//td[3]/text()'
-    X_REGION = r'.//td[4]/text()'
-    X_COMPANY = r'.//td[@scope="row"]/a/text()'
+    # X_CITY = r'.//td[3]/text()'
+    # X_REGION = r'.//td[4]/text()'
+    # X_COMPANY = r'.//td[@scope="row"]/a/text()'
     X_DETAILS_URL = r'.//td[@scope="row"]/a/@href'
 
     def __init__(self, year=2015, *args, **kwargs):
@@ -54,9 +54,9 @@ class CroatiaSpider(CrawlSpider):
             item = CroatiaItemLoader(selector=row, item=FarmSubsidyItem())
 
             item.add_value('recipient_id', reference)
-            item.add_xpath('recipient_name', self.X_COMPANY)
-            item.add_xpath('recipient_address', self.X_CITY)
-            item.add_xpath('recipient_address', self.X_REGION)
+            # item.add_xpath('recipient_name', self.X_COMPANY)
+            # item.add_xpath('recipient_address', self.X_CITY)
+            # item.add_xpath('recipient_address', self.X_REGION)
             item.add_value('year', self.year)
 
             yield Request(
