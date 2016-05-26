@@ -3,7 +3,6 @@
 from scrapy import Request
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
-from copy import deepcopy
 
 from scrapy_fs.items import CroatiaItemLoader, FarmSubsidyItem
 
