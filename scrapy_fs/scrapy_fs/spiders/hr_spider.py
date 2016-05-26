@@ -74,6 +74,7 @@ class CroatiaSpider(CrawlSpider):
         @scrapes    scheme
         @scrapes    year
         @scrapes    amount
+        @scrapes    currency
 
         """
         self.logger.debug('Landed on recipient page %s', response.url)
@@ -104,6 +105,7 @@ class CroatiaSpider(CrawlSpider):
         item.add_value('scheme', scheme)
         item.add_value('year', year)
         item.add_value('amount', amount)
+        item.add_value('currency', 'HRK')
 
         subsidy = item.load_item()
         self.logger.debug('Parsed %s subsidy from %s', subsidy['amount'], subsidy['agency'])
