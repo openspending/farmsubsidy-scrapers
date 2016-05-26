@@ -11,7 +11,7 @@ class CroatiaSpider(CrawlSpider):
     name = 'croatia'
 
     paginator = LinkExtractor(allow=('page', ))
-    pagination_rule = Rule(paginator, callback='parse_table', follow=True)
+    pagination_rule = Rule(paginator, callback='parse_recipients', follow=True)
     allowed_domains = ['isplate.apprrr.hr']
     rules = [pagination_rule]
 
