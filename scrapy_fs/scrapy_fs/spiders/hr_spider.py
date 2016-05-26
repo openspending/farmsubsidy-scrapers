@@ -25,9 +25,8 @@ class CroatiaSpider(CrawlSpider):
     X_DETAILS_URL = './/td[@scope="row"]/a/@href'
 
     X_NAME = '//div[@class="well"]/ul/li[1]/text()'
-    X_ID = '//div[@class="well"]/ul/li[2]/text()'
+    X_POSTCODE = '//div[@class="well"]/ul/li[2]/text()'
     X_CITY = '//div[@class="well"]/ul/li[3]/text()'
-    X_REGION = '//div[@class="well"]/ul/li[4]/text()'
 
     X_AGENCY = './/td[1]/text()'
     X_SCHEME = './/td[2]/text()'
@@ -68,7 +67,7 @@ class CroatiaSpider(CrawlSpider):
 
         @scrapes    recipient_name
         @scrapes    recipient_id
-        @scrapes    recipient_address
+        @scrapes    recipient_postcode
         @scrapes    recipient_location
         @scrapes    agency
         @scrapes    scheme
@@ -86,10 +85,11 @@ class CroatiaSpider(CrawlSpider):
             recipient = CroatiaItemLoader(item=FarmSubsidyItem(), response=response)
 
             recipient.add_xpath('recipient_name', self.X_NAME)
-            recipient.add_xpath('recipient_id', self.X_ID)
+            recipient.add_xpath('recipient_postcode', self.X_POSTCODE)
             recipient.add_xpath('recipient_location', self.X_CITY)
-            recipient.add_xpath('recipient_address', self.X_CITY)
-            recipient.add_xpath('recipient_address', self.X_REGION)
+
+            recipient.add_value('recipient_id', response.url)
+            recipient.add_value('recipient_url', response.url)
 
             yield self._parse_subsidy(row, recipient)
 

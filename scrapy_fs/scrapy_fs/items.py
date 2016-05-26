@@ -6,6 +6,10 @@
 
 from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
+from scrapy.loader.processors import TakeFirst, MapCompose
+
+from scrapy_fs.srubbers import filter_croatian_amount, filter_croatian_recipient_id, filter_croatian_location, \
+    filter_croatian_postcode
 
 
 class FarmSubsidyItem(Item):
@@ -24,4 +28,10 @@ class FarmSubsidyItem(Item):
 
 
 class CroatiaItemLoader(ItemLoader):
-    pass
+    default_output_processor = TakeFirst()
+
+    year_in = MapCompose(int)
+    amount_in = MapCompose(filter_croatian_amount)
+    recipient_id_in = MapCompose(filter_croatian_recipient_id)
+    recipient_location_in = MapCompose(filter_croatian_location)
+    recipient_postcode_in = MapCompose(filter_croatian_postcode)
