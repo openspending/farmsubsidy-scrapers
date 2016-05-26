@@ -42,24 +42,28 @@ class CroatiaSpider(CrawlSpider):
         self.start_urls = [self.start_url_format % self.year]
         super(CroatiaSpider, self).__init__(*args, **kwargs)
 
-    def parse_table(self, response):
-        """ Parse the paginated table where the companies are listed.
+    def parse_recipients(self, response):
+        """ Parse the main (paginated) table where the recipients are listed.
 
         @url        http://isplate.apprrr.hr/godina/2015
         @returns    requests 101
 
         """
-
         self.logger.info('Landed on %s', response.url)
-        table = response.xpath(self.X_TABLE)
 
-        for row in table.xpath(self.X_ROWS):
+        table = response.xpath(self.X_TABLE)
+        rows = table.xpath(self.X_ROWS)
+
+        for row in rows:
             reference = row.xpath(self.X_REFERENCE).extract_first()
             details_url = self.details_url_format % (self.year, reference)
-            yield Request(details_url, callback=self.parse_recipient)
+            yield Request(details_url, callback=self.parse_subsidies)
 
-    def parse_recipient(self, response):
-        """ Parse the recipient information above the subsidy table.
+    def parse_subsidies(self, response):
+        """ Parse information on the recipient page.
+
+        1. The recipient information above the subsidy table
+        2. Each row in the subsidy table
 
         @url        http://isplate.apprrr.hr/godina/2015/korisnik/201095
 
@@ -87,9 +91,9 @@ class CroatiaSpider(CrawlSpider):
             recipient.add_xpath('recipient_address', self.X_CITY)
             recipient.add_xpath('recipient_address', self.X_REGION)
 
-            yield self.parse_subsidy(row, recipient)
+            yield self._parse_subsidy(row, recipient)
 
-    def parse_subsidy(self, row, item):
+    def _parse_subsidy(self, row, item):
         """ Parse each line in the recipient table as a separate subsidy item. """
 
         agency = row.xpath(self.X_AGENCY).extract()
