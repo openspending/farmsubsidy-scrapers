@@ -3,7 +3,7 @@
 from scrapy import Request
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
-from scrapy.shell import inspect_response
+from copy import deepcopy
 
 from scrapy_fs.items import CroatiaItemLoader, FarmSubsidyItem
 
@@ -19,13 +19,23 @@ class CroatiaSpider(CrawlSpider):
     start_url_format = 'http://isplate.apprrr.hr/godina/%s'
     details_url_format = start_url_format + '/korisnik/%s'
 
-    X_TABLE = r'//tbody'
-    X_ROWS = r'.//tr'
-    X_REFERENCE = r'.//td[1]/text()'
-    # X_CITY = r'.//td[3]/text()'
-    # X_REGION = r'.//td[4]/text()'
-    # X_COMPANY = r'.//td[@scope="row"]/a/text()'
-    X_DETAILS_URL = r'.//td[@scope="row"]/a/@href'
+    X_TABLE = '//tbody'
+    X_ROWS = './/tr'
+
+    X_REFERENCE = './/td[1]/text()'
+    X_DETAILS_URL = './/td[@scope="row"]/a/@href'
+
+    X_NAME = '//div[@class="well"]/ul/li[1]/text()'
+    X_ID = '//div[@class="well"]/ul/li[2]/text()'
+    X_CITY = '//div[@class="well"]/ul/li[3]/text()'
+    X_REGION = '//div[@class="well"]/ul/li[4]/text()'
+
+    X_AGENCY = './/td[1]/text()'
+    X_SCHEME = './/td[2]/text()'
+    X_YEAR = './/td[3]/text()'
+    X_AMOUNT = './/td[5]/text()'
+
+    IGNORE_SUM = slice(0, -1)
 
     def __init__(self, year=2015, *args, **kwargs):
         self.year = str(year)
@@ -35,14 +45,8 @@ class CroatiaSpider(CrawlSpider):
     def parse_table(self, response):
         """ Parse the paginated table where the companies are listed.
 
-        @url http://isplate.apprrr.hr/godina/2015
-
-        @returns requests 101
-
-        @scrapes recipient_id
-        @scrapes recipient_name
-        @scrapes recipient_address
-        @scrapes year
+        @url        http://isplate.apprrr.hr/godina/2015
+        @returns    requests 101
 
         """
 
@@ -51,23 +55,53 @@ class CroatiaSpider(CrawlSpider):
 
         for row in table.xpath(self.X_ROWS):
             reference = row.xpath(self.X_REFERENCE).extract_first()
-            item = CroatiaItemLoader(selector=row, item=FarmSubsidyItem())
+            details_url = self.details_url_format % (self.year, reference)
+            yield Request(details_url, callback=self.parse_recipient)
 
-            item.add_value('recipient_id', reference)
-            # item.add_xpath('recipient_name', self.X_COMPANY)
-            # item.add_xpath('recipient_address', self.X_CITY)
-            # item.add_xpath('recipient_address', self.X_REGION)
-            item.add_value('year', self.year)
+    def parse_recipient(self, response):
+        """ Parse the recipient information above the subsidy table.
 
-            yield Request(
-                self.details_url_format % (self.year, reference),
-                callback=self.parse_details,
-                meta={'loader': item}
-            )
+        @url        http://isplate.apprrr.hr/godina/2015/korisnik/201095
 
-    def parse_details(self, response):
-        """ Parse the page with the subsidy details. """
+        @scrapes    recipient_name
+        @scrapes    recipient_id
+        @scrapes    recipient_address
+        @scrapes    recipient_location
+        @scrapes    agency
+        @scrapes    scheme
+        @scrapes    year
+        @scrapes    amount
 
-        self.logger.debug('Grabbing details on %s', response.url)
-        item = response.meta['loader']
-        return item.load()
+        """
+        self.logger.debug('Landed on recipient page %s', response.url)
+
+        table = response.xpath(self.X_TABLE)
+        rows = table.xpath(self.X_ROWS)[self.IGNORE_SUM]
+
+        for row in rows:
+            recipient = CroatiaItemLoader(item=FarmSubsidyItem(), response=response)
+
+            recipient.add_xpath('recipient_name', self.X_NAME)
+            recipient.add_xpath('recipient_id', self.X_ID)
+            recipient.add_xpath('recipient_location', self.X_CITY)
+            recipient.add_xpath('recipient_address', self.X_CITY)
+            recipient.add_xpath('recipient_address', self.X_REGION)
+
+            yield self.parse_subsidy(row, recipient)
+
+    def parse_subsidy(self, row, item):
+        """ Parse each line in the recipient table as a separate subsidy item. """
+
+        agency = row.xpath(self.X_AGENCY).extract()
+        scheme = row.xpath(self.X_SCHEME).extract()
+        year = row.xpath(self.X_YEAR).extract()
+        amount = row.xpath(self.X_AMOUNT).extract()
+
+        item.add_value('agency', agency)
+        item.add_value('scheme', scheme)
+        item.add_value('year', year)
+        item.add_value('amount', amount)
+
+        subsidy = item.load_item()
+        self.logger.debug('Parsed %s subsidy from %s', subsidy['amount'], subsidy['agency'])
+        return subsidy
