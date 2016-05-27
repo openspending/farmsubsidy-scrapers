@@ -7,7 +7,7 @@ def filter_croatian_amount(amount):
     return float(amount.replace(' HRK', '').replace('.', '').replace(',', '.'))
 
 
-def filter_croatian_location(location):
+def select_after_semicolon(location):
     return location.split(': ')[-1]
 
 
