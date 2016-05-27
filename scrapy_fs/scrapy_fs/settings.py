@@ -17,5 +17,7 @@ ITEM_PIPELINES = {
     'scrapy_fs.pipelines.CroatianNationalSubsidyFilter': 100,
 }
 
-# For the croatian spider
 USER_AGENT = 'Farm subsidy scraper bot (http://farmsubsidy.openspending.org/)'
+
+FEED_URI = 's3://eu-farm-subsidies/%(country)s_%(year)s_%(time)s.csv'
+FEED_FORMAT = 'csv'
