@@ -106,6 +106,7 @@ class CroatiaSpider(CrawlSpider):
         item.add_value('year', year)
         item.add_value('amount', amount)
         item.add_value('currency', 'HRK')
+        item.add_value('country', 'HR')
 
         subsidy = item.load_item()
         self.logger.debug('Parsed %s subsidy from %s', subsidy['amount'], subsidy['agency'])
