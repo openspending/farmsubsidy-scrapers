@@ -14,7 +14,7 @@ NEWSPIDER_MODULE = 'scrapy_fs.spiders'
 # AUTOTHROTTLE_ENABLED = True
 
 ITEM_PIPELINES = {
-    'scrapy_fs.pipelines.CroatianNationalSubsidyFilter': 100,
+    'scrapy_fs.pipelines.DropSubsidyFilter': 100,
 }
 
 USER_AGENT = 'Farm subsidy scraper bot (http://farmsubsidy.openspending.org/)'
