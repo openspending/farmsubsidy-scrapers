@@ -4,7 +4,7 @@ from scrapy.exceptions import DropItem
 
 
 class DropSubsidyFilter(object):
-    """ Filters out subsidy items corresponding to national schemes. """
+    """ Drop unwanted subsidy items. """
 
     @staticmethod
     def process_item(item, spider):
