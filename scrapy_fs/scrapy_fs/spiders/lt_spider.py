@@ -14,13 +14,14 @@ class LithuaniaSpider(Spider):
     country = 'LT'
     allowed_domains = ['portal.nma.lt']
 
-    X_FUNDS = [('./td[5]/text()', 'EADS'), ('./td[7]/text()', 'EAFRD')]
+    AGENCY_COLUMNS = {'EADS': 5, 'EAFRD': 7}
+
     X_MUNICIPALITY = './td[2]/text()'
     X_DISTRICT = './td[3]/text()'
     X_SCHEME = './td[4]/text()'
 
     def __init__(self, year=2015):
-        self.year = year
+        self.year = int(year)
         self.page = TablePaginator(year)
         super(LithuaniaSpider, self).__init__()
 
@@ -35,8 +36,9 @@ class LithuaniaSpider(Spider):
 
         for id_, name, subsidies in recipients:
             for row in subsidies:
-                for x_amount, agency in self.X_FUNDS:
+                for agency, column in self.AGENCY_COLUMNS.items():
                     subsidy = LithuanianLoader(item=FarmSubsidyItem(), selector=row)
+                    x_amount = self.build_amount_xpath(column)
 
                     subsidy.add_value('currency', 'EUR')
                     subsidy.add_value('country', self.country)
@@ -58,6 +60,11 @@ class LithuaniaSpider(Spider):
             yield self.page.request
         else:
             self.logger.debug('Pagination complete')
+
+    def build_amount_xpath(self, column):
+        # Tables for 2013 & 2014 have subsidies in both LTL and EUR.
+        xpath = './td[%s]/text()' if self.year == 2015 else './td[%s]/table/tr[2]/td[1]/text()'
+        return xpath % column
 
 
 class Recipients(UserList):
