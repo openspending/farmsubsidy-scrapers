@@ -184,9 +184,9 @@ def bulk_download(year, bucket):
         data = concat([data, fragment.data], ignore_index=True)
         log.debug('Added %s rows to bulk dataframe', len(fragment.data))
 
-    data.to_csv(filepath, encoding='utf-8', mode='w+')
     data.drop_duplicates(inplace=True)
-    log.info('Bulk download saved to %s', filepath)
+    data.to_csv(filepath, encoding='utf-8', mode='w+')
+    log.info('Bulk download saved to %s (%s rows)', filepath, len(data))
 
 
 if __name__ == '__main__':
