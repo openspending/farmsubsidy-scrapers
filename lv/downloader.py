@@ -39,11 +39,12 @@ class DataFragment(object):
             'format': 'csv',
             'utf8': u'✓'
         }
+        self.description = 'scheme %s, year %s' % (self.scheme, self.year)
 
     def download(self):
         self.query.update({'eps_payment[schema]': self.scheme})
         self.response = get(self.BASE_URL, params=self.query)
-        log.debug('Downloaded scheme %s', self.scheme)
+        log.debug('Downloaded %s', self.description)
 
     def save_to_cache(self):
         chunks = self.response.iter_content(chunk_size=self.CHUNK_SIZE)
@@ -61,13 +62,10 @@ class DataFragment(object):
 
     @property
     def dataframe(self):
-        dataframe = read_csv(self.filepath, sep=':', quoting=QUOTE_ALL, skiprows=[0, 1, 2], encoding='utf-16')
-        log.info('Loaded %s (%s rows)', self.name, dataframe.shape[0])
+        # Funnily enough, I ask for utf-8 and get utf-16 back... wtf?
+        dataframe = read_csv(self.filepath, sep=';', quoting=QUOTE_ALL, skiprows=[0, 1, 2], encoding='utf-16')
+        log.info('Loaded %s (%s rows)', self.description, dataframe.shape[0])
         return dataframe
-
-    @property
-    def name(self):
-        return 'scheme = %s, year = %s' % (self.scheme, str(self.year))
 
 
 class Aggregator(object):
