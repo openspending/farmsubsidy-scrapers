@@ -2,7 +2,7 @@
 """ Download and aggregate CSV files from the Latvian website.
 
 Usage:
-    lt_downloader.py [--year=YEAR] [--bucket=BUCKET]
+    lv_downloader.py [--year=YEAR] [--bucket=BUCKET]
 
 Options:
     --year=YEAR       Calendar year [default: 2014]
@@ -28,9 +28,9 @@ from slugify import slugify
 
 SCHEMES = [
     'L111.14',
-    'L002'
-    'L141'
-    'L112'
+    'L002',
+    'L141',
+    'L112',
     'NATURA',
     'ZRG',
     'L006;L005',
