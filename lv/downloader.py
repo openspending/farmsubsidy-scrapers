@@ -1,5 +1,5 @@
 # coding: utf-8
-""" This is a selenium downloader for the Latvian website. """
+""" A script to download and aggregate CSV files from the Latvian website. """
 
 
 # The form for requesting data is https://eps.lad.gov.lv/payment_recipients.
@@ -7,28 +7,36 @@
 # Requesting all the data at once times out however. So the way to go is to
 # request subsidy schemes one by one and pray to the god of APIs.
 
+
 from csv import QUOTE_ALL
 from logging import getLogger, basicConfig, DEBUG
 from os.path import join, exists
-from pandas import read_csv, set_option
+from pandas import read_csv, set_option, DataFrame, concat
 from requests import get
 from slugify import slugify
 
 
+LINE = 300 * '-'
+BUCKET = '/home/loic/output/farm-subsidies'
+CHUNK_SIZE = 512 * 1024
+
+
 set_option('display.expand_frame_repr', False)
 basicConfig(level=DEBUG, format='[%(module)s] %(message)s')
-log = getLogger(__name__)
-line = 300 * '-'
 
 
-class DataFragment(object):
+class Fragment(object):
     BASE_URL = 'https://eps.lad.gov.lv/payment_recipients?'
-    BUCKET = '/home/loic/output/farm-subsidies'
-    CHUNK_SIZE = 512 * 1024
 
     def __init__(self, scheme, year=2014):
+        self.log = getLogger(__name__)
         self.year = int(year)
         self.scheme = scheme
+        self.description = '%s %s' % (scheme, year)
+
+        self.response = None
+        self.data = None
+
         self.query = {
             'commit': u'Meklēt',
             'eps_payment[fund]': 'elf',
@@ -38,54 +46,78 @@ class DataFragment(object):
             'format': 'csv',
             'utf8': u'✓'
         }
-        self.description = 'scheme %s, year %s' % (self.scheme, self.year)
-
-    @property
-    def url(self):
-        parameters = [key + '=' + 'value' for key, value in self.query.items()]
-        return self.BASE_URL + '&'.join(parameters)
 
     def download(self):
         self.query.update({'eps_payment[schema]': self.scheme})
-        response = get(self.BASE_URL, params=self.query)
-        self._save_to_cache(response)
-        log.debug('Saved %s', self.filepath)
+        self.response = get(self.BASE_URL, params=self.query)
+        self._save_to_cache()
+        self.log.debug('Saved %s', self.filepath)
 
-    def _save_to_cache(self, response):
-        chunks = response.iter_content(chunk_size=self.CHUNK_SIZE)
+    def _save_to_cache(self):
+        chunks = self.response.iter_content(chunk_size=CHUNK_SIZE)
         with open(self.filepath, 'w+') as cache:
             for chunk in chunks:
                 if chunk:
                     cache.write(chunk)
 
-    @property
-    def filepath(self):
-        parts = ['latvia', str(self.year), self.scheme]
-        filename = slugify(unicode('_'.join(parts)))
-        return join(self.BUCKET, filename + '.csv')
-
-    @property
-    def df_raw(self):
-        columns = ['recipient_name', 'recipient_location', 'scheme', 'amount']
+    def load_from_csv(self):
+        columns = ['recipient_name',
+                   'recipient_location',
+                   'scheme',
+                   'amount']
 
         # I ask for utf-8 and get utf-16 back... wtf?
-        dataframe = read_csv(self.filepath,
+        self.data = read_csv(self.filepath,
                              sep=';',
                              quoting=QUOTE_ALL,
                              skiprows=[0, 1, 2],
                              encoding='utf-16',
                              names=columns)
 
-        log.info('Loaded %s (%s rows)', self.description, dataframe.shape[0])
-        return dataframe
+        self.log.info('Loaded %s (%s rows)', self.description, self.data.shape[0])
+
+    def cleanup(self):
+        self.data.ffill(inplace=True)
+        self.data.where(self.data_rows, inplace=True)
+
+        self.data['recipient_id'] = self.recipient_ids
+        self.data['recipient_url'] = self.url
+        self.data['recipient_country'] = 'LV'
+        self.data['currency'] = 'EUR'
+        self.data['year'] = 2014
+
+        self.data['recipient_postcode'] = None
+        self.data['recipient_address'] = None
+
+        self.log.debug('Cleaned-up fragment %s (%s rows)', self.description, self.data.shape[0])
+        self.log.debug('Dataframe head: \n%s\n%s\n%s', LINE, self.data.head(), LINE)
+
+    @property
+    def filepath(self):
+        parts = ['latvia', str(self.year), self.scheme]
+        filename = slugify(unicode('_'.join(parts)))
+        return join(BUCKET, filename + '.csv')
 
     @property
     def is_cached(self):
         if exists(self.filepath):
-            log.debug('Found %s in cache', self.filepath)
+            self.log.debug('Found %s in cache', self.filepath)
             return True
         else:
             return False
+
+    @property
+    def recipient_ids(self):
+        return map(slugify, map(unicode, self.data['recipient_name']))
+
+    @property
+    def data_rows(self):
+        return self.data['scheme'] != str(self.year)
+
+    @property
+    def url(self):
+        parameters = [key + '=' + 'value' for key, value in self.query.items()]
+        return self.BASE_URL + '&'.join(parameters)
 
 
 class Aggregator(object):
@@ -123,33 +155,24 @@ class Aggregator(object):
 
     def __init__(self, year=2014):
         self.year = year
+        self.fragments = list(self.bulk_download())
+        self.filepath = join(BUCKET, '_latvia_' + str(year))
+        self.data = DataFrame()
 
-    @property
-    def fragments(self):
+    def bulk_download(self):
         for scheme in self.SCHEMES:
-            fragment = DataFragment(scheme)
+            fragment = Fragment(scheme, year=self.year)
             if not fragment.is_cached:
                 fragment.download()
-            yield fragment
+            fragment.load_from_csv()
+            fragment.cleanup()
+            yield fragment.data
 
-    def transform(self):
-        for fragment in self.fragments:
-            df = fragment.df_raw.ffill()
-            df = df[df['scheme'] != str(fragment.year)]
-            df['year'] = 2014
-            df['recipient_url'] = fragment.url
-            df['recipient_postcode'] = None
-            df['recipient_country'] = 'LV'
-            df['recipient_address'] = None
-            df['currency'] = 'EUR'
-            df['recipient_id'] = map(slugify, df['recipient_name'])
-            log.debug('Fragment %s has %s rows: \n%s\n%s\n%s',
-                      fragment.description,
-                      df.shape[0],
-                      line,
-                      df.head(),
-                      line)
+    def aggregate(self):
+        self.data = concat(self.fragments)
+        # self.log.debug('Concatenated %s new rows', self.data.shape[0])
+
 
 if __name__ == '__main__':
     aggregator = Aggregator(2014)
-    aggregator.transform()
+    aggregator.aggregate()
