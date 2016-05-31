@@ -19,7 +19,6 @@ Options:
 from csv import QUOTE_ALL
 from logging import getLogger, basicConfig, DEBUG
 from os.path import join, exists
-
 from docopt import docopt
 from pandas import read_csv, set_option, DataFrame, concat
 from requests import get
@@ -75,7 +74,7 @@ class Fragment(object):
     def __init__(self, scheme, year=2014):
         self.year = int(year)
         self.scheme = scheme
-        self.description = '%s %s' % (scheme, year)
+        self.description = '%s %s' % (year, scheme)
 
         self.response = None
         self.data = None
@@ -94,6 +93,7 @@ class Fragment(object):
         self.query.update({'eps_payment[schema]': self.scheme})
         self.response = get(self.BASE_URL, params=self.query)
         self._save_to_cache()
+
         log.debug('Saved %s', self.filepath)
 
     def _save_to_cache(self):
@@ -117,11 +117,12 @@ class Fragment(object):
                              encoding='utf-16',
                              names=columns)
 
-        log.info('Loaded %s (%s rows)', self.description, self.data.shape[0])
+        log.info('Loaded %s', self.description)
+        self.log_dataframe()
 
     def cleanup(self):
         self.data.ffill(inplace=True)
-        self.data.where(self.data_rows, inplace=True)
+        self.data.where(self.data_rows_only, inplace=True)
 
         self.data['recipient_id'] = self.recipient_ids
         self.data['recipient_url'] = self.url
@@ -132,8 +133,12 @@ class Fragment(object):
         self.data['recipient_postcode'] = None
         self.data['recipient_address'] = None
 
-        log.debug('Cleaned-up fragment %s (%s rows)', self.description, len(self))
-        log.debug('Dataframe head: \n%s\n%s\n%s', LINE, self.data.head(), LINE)
+        log.info('Cleaned up %s', self.description)
+        self.log_dataframe()
+
+    def log_dataframe(self):
+        log.debug('Dataframe has %s rows: \n%s\n%s\n%s',
+                  len(self.data), LINE, self.data.head(10), LINE)
 
     @property
     def filepath(self):
@@ -154,16 +159,13 @@ class Fragment(object):
         return map(slugify, map(unicode, self.data['recipient_name']))
 
     @property
-    def data_rows(self):
+    def data_rows_only(self):
         return self.data['scheme'] != str(self.year)
 
     @property
     def url(self):
         parameters = [key + '=' + 'value' for key, value in self.query.items()]
         return self.BASE_URL + '&'.join(parameters)
-
-    def __len__(self):
-        return self.data.shape[0]
 
 
 def bulk_download(year=2014):
@@ -179,11 +181,11 @@ def bulk_download(year=2014):
         fragment.load_from_csv()
         fragment.cleanup()
 
-        data = concat([data, fragment.data])
-        log.debug('Added %s rows to bulk dataframe', len(fragment))
+        data = concat([data, fragment.data], ignore_index=True)
+        log.debug('Added %s rows to bulk dataframe', len(fragment.data))
 
+    data.to_csv(filepath, encoding='utf-8', mode='w+')
     data.drop_duplicates(inplace=True)
-    data.to_csv(filepath, encoding='utf-8')
     log.info('Bulk download saved to %s', filepath)
 
 
