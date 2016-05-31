@@ -136,8 +136,12 @@ class Fragment(object):
         self.log_dataframe()
 
     def log_dataframe(self):
-        log.debug('Dataframe has %s rows: \n%s\n%s\n%s',
-                  len(self.data), 300 * '-', self.data.head(10), 300 * '-')
+        log.debug('%s has %s rows: \n%s\n%s\n%s',
+                  self.description,
+                  len(self.data),
+                  300 * '-',
+                  self.data.head(10),
+                  300 * '-')
 
     @property
     def filepath(self):
@@ -150,8 +154,6 @@ class Fragment(object):
         if exists(self.filepath):
             log.debug('Found %s in cache', self.filepath)
             return True
-        else:
-            return False
 
     @property
     def recipient_ids(self):
@@ -170,6 +172,7 @@ class Fragment(object):
 def bulk_download(year, bucket):
     bucket = expanduser(bucket)
     filepath = bucket + 'latvia' + str(year) + '.csv'
+
     data = DataFrame()
 
     for scheme in SCHEMES:
