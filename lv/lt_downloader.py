@@ -121,7 +121,7 @@ class Fragment(object):
 
     def cleanup(self):
         self.data.ffill(inplace=True)
-        self.data.where(self.data_rows_only, inplace=True)
+        self.data = self.data[self.data_rows_only]
 
         self.data['recipient_id'] = self.recipient_ids
         self.data['recipient_url'] = self.url
