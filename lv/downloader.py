@@ -9,7 +9,7 @@
 
 from csv import QUOTE_ALL
 from logging import getLogger, basicConfig, DEBUG
-from os.path import join
+from os.path import join, exists
 from pandas import read_csv
 from requests import get
 from slugify import slugify
@@ -40,9 +40,13 @@ class DataFragment(object):
         self.description = 'scheme %s, year %s' % (self.scheme, self.year)
 
     def download(self):
-        self.query.update({'eps_payment[schema]': self.scheme})
-        self.response = get(self.BASE_URL, params=self.query)
-        log.debug('Downloaded %s', self.description)
+        if not self.is_cached:
+            self.query.update({'eps_payment[schema]': self.scheme})
+            self.response = get(self.BASE_URL, params=self.query)
+            self.save_to_cache()
+            log.debug('Saved %s', self.filepath)
+        else:
+            log.debug('%s found in cache', self.filepath)
 
     def save_to_cache(self):
         chunks = self.response.iter_content(chunk_size=self.CHUNK_SIZE)
@@ -50,7 +54,6 @@ class DataFragment(object):
             for chunk in chunks:
                 if chunk:
                     cache.write(chunk)
-        log.debug('Saved scheme to %s', self.filepath)
 
     @property
     def filepath(self):
@@ -64,6 +67,10 @@ class DataFragment(object):
         dataframe = read_csv(self.filepath, sep=';', quoting=QUOTE_ALL, skiprows=[0, 1, 2], encoding='utf-16')
         log.info('Loaded %s (%s rows)', self.description, dataframe.shape[0])
         return dataframe
+
+    @property
+    def is_cached(self):
+        return True if exists(self.filepath) else False
 
 
 class Aggregator(object):
@@ -107,7 +114,6 @@ class Aggregator(object):
         for scheme in self.SCHEMES:
             fragment = DataFragment(scheme)
             fragment.download()
-            fragment.save_to_cache()
             yield fragment.dataframe
 
     def aggregate(self):
