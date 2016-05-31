@@ -12,7 +12,6 @@ from logging import getLogger, basicConfig, DEBUG
 from os.path import join
 from pandas import read_csv
 from requests import get
-from datetime import datetime
 from slugify import slugify
 
 
@@ -26,7 +25,6 @@ class DataFragment(object):
     CHUNK_SIZE = 512 * 1024
 
     def __init__(self, scheme, year=2014):
-        self.timestamp = str(datetime.now())
         self.year = int(year)
         self.scheme = scheme
         self.response = None
@@ -56,13 +54,13 @@ class DataFragment(object):
 
     @property
     def filepath(self):
-        parts = ['latvia', str(self.year), self.scheme, self.timestamp]
+        parts = ['latvia', str(self.year), self.scheme]
         filename = slugify(unicode('_'.join(parts)))
         return join(self.BUCKET, filename + '.csv')
 
     @property
     def dataframe(self):
-        # Funnily enough, I ask for utf-8 and get utf-16 back... wtf?
+        # I ask for utf-8 and get utf-16 back... wtf?
         dataframe = read_csv(self.filepath, sep=';', quoting=QUOTE_ALL, skiprows=[0, 1, 2], encoding='utf-16')
         log.info('Loaded %s (%s rows)', self.description, dataframe.shape[0])
         return dataframe
