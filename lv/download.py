@@ -29,33 +29,33 @@ from slugify import slugify
 SCHEMES = [
     'L111.14',
     'L002'
-    # 'L141'
-    # 'L112'
-    # 'NATURA',
-    # 'ZRG',
-    # 'L006;L005',
-    # 'L312.21;L312.02;L312.03;L312.11;L312.01',
-    # 'ACM',
-    # 'ARKIR',
-    # 'BDUZ',
-    # 'BLA',
-    # 'VEI',
-    # 'PAAP',
-    # 'FDA',
-    # 'A004',
-    # 'INTVK',
-    # 'L125',
-    # 'IDIV',
-    # 'INZPIE;INZPUA;TKODSRP',
-    # 'IKC',
-    # 'ISA',
-    # 'ILA',
-    # 'IPKV',
-    # 'NIM',
-    # 'L411',
-    # 'L123',
-    # 'L223',
-    # 'L4132.03;L4132.02;L4131.05;L4132.04;L4132.01;L4131.01;L4132.05;L4131.02;L4131.03'
+    'L141'
+    'L112'
+    'NATURA',
+    'ZRG',
+    'L006;L005',
+    'L312.21;L312.02;L312.03;L312.11;L312.01',
+    'ACM',
+    'ARKIR',
+    'BDUZ',
+    'BLA',
+    'VEI',
+    'PAAP',
+    'FDA',
+    'A004',
+    'INTVK',
+    'L125',
+    'IDIV',
+    'INZPIE;INZPUA;TKODSRP',
+    'IKC',
+    'ISA',
+    'ILA',
+    'IPKV',
+    'NIM',
+    'L411',
+    'L123',
+    'L223',
+    'L4132.03;L4132.02;L4131.05;L4132.04;L4132.01;L4131.01;L4132.05;L4131.02;L4131.03'
 ]
 
 
