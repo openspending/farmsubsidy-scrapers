@@ -10,13 +10,15 @@
 from csv import QUOTE_ALL
 from logging import getLogger, basicConfig, DEBUG
 from os.path import join, exists
-from pandas import read_csv
+from pandas import read_csv, set_option
 from requests import get
 from slugify import slugify
 
 
+set_option('display.expand_frame_repr', False)
 basicConfig(level=DEBUG, format='[%(module)s] %(message)s')
 log = getLogger(__name__)
+line = 300 * '-'
 
 
 class DataFragment(object):
@@ -27,7 +29,6 @@ class DataFragment(object):
     def __init__(self, scheme, year=2014):
         self.year = int(year)
         self.scheme = scheme
-        self.response = None
         self.query = {
             'commit': u'Meklēt',
             'eps_payment[fund]': 'elf',
@@ -39,17 +40,19 @@ class DataFragment(object):
         }
         self.description = 'scheme %s, year %s' % (self.scheme, self.year)
 
-    def download(self):
-        if not self.is_cached:
-            self.query.update({'eps_payment[schema]': self.scheme})
-            self.response = get(self.BASE_URL, params=self.query)
-            self.save_to_cache()
-            log.debug('Saved %s', self.filepath)
-        else:
-            log.debug('%s found in cache', self.filepath)
+    @property
+    def url(self):
+        parameters = [key + '=' + 'value' for key, value in self.query.items()]
+        return self.BASE_URL + '&'.join(parameters)
 
-    def save_to_cache(self):
-        chunks = self.response.iter_content(chunk_size=self.CHUNK_SIZE)
+    def download(self):
+        self.query.update({'eps_payment[schema]': self.scheme})
+        response = get(self.BASE_URL, params=self.query)
+        self._save_to_cache(response)
+        log.debug('Saved %s', self.filepath)
+
+    def _save_to_cache(self, response):
+        chunks = response.iter_content(chunk_size=self.CHUNK_SIZE)
         with open(self.filepath, 'w+') as cache:
             for chunk in chunks:
                 if chunk:
@@ -62,15 +65,27 @@ class DataFragment(object):
         return join(self.BUCKET, filename + '.csv')
 
     @property
-    def dataframe(self):
+    def df_raw(self):
+        columns = ['recipient_name', 'recipient_location', 'scheme', 'amount']
+
         # I ask for utf-8 and get utf-16 back... wtf?
-        dataframe = read_csv(self.filepath, sep=';', quoting=QUOTE_ALL, skiprows=[0, 1, 2], encoding='utf-16')
+        dataframe = read_csv(self.filepath,
+                             sep=';',
+                             quoting=QUOTE_ALL,
+                             skiprows=[0, 1, 2],
+                             encoding='utf-16',
+                             names=columns)
+
         log.info('Loaded %s (%s rows)', self.description, dataframe.shape[0])
         return dataframe
 
     @property
     def is_cached(self):
-        return True if exists(self.filepath) else False
+        if exists(self.filepath):
+            log.debug('Found %s in cache', self.filepath)
+            return True
+        else:
+            return False
 
 
 class Aggregator(object):
@@ -110,17 +125,31 @@ class Aggregator(object):
         self.year = year
 
     @property
-    def dataframes(self):
+    def fragments(self):
         for scheme in self.SCHEMES:
             fragment = DataFragment(scheme)
-            fragment.download()
-            yield fragment.dataframe
+            if not fragment.is_cached:
+                fragment.download()
+            yield fragment
 
-    def aggregate(self):
-        for df in self.dataframes:
-            log.debug('Aggregated %s rows', df.shape[0])
-
+    def transform(self):
+        for fragment in self.fragments:
+            df = fragment.df_raw.ffill()
+            df = df[df['scheme'] != str(fragment.year)]
+            df['year'] = 2014
+            df['recipient_url'] = fragment.url
+            df['recipient_postcode'] = None
+            df['recipient_country'] = 'LV'
+            df['recipient_address'] = None
+            df['currency'] = 'EUR'
+            df['recipient_id'] = map(slugify, df['recipient_name'])
+            log.debug('Fragment %s has %s rows: \n%s\n%s\n%s',
+                      fragment.description,
+                      df.shape[0],
+                      line,
+                      df.head(),
+                      line)
 
 if __name__ == '__main__':
     aggregator = Aggregator(2014)
-    aggregator.aggregate()
+    aggregator.transform()
