@@ -2,10 +2,11 @@
 """ Download and aggregate CSV files from the Latvian website.
 
 Usage:
-    download [--year=YEAR]
+    lt_downloader.py [--year=YEAR] [--bucket=BUCKET]
 
 Options:
-    --year=YEAR    Calendar year [default: 2014]
+    --year=YEAR       Calendar year [default: 2014]
+    --bucket=BUCKET   File dump directory [default: ~/output/farm-subsidies/]
 
 """
 
@@ -13,12 +14,12 @@ Options:
 # The form for requesting data is https://eps.lad.gov.lv/payment_recipients.
 # The form gives you the option of downloading a csv file... which is cool.
 # Requesting all the data at once times out however. So the way to go is to
-# request subsidy schemes one by one and pray to the god of APIs.
+# request subsidy schemes one by one and stitch them together.
 
 
 from csv import QUOTE_ALL
 from logging import getLogger, basicConfig, DEBUG
-from os.path import join, exists
+from os.path import join, exists, expanduser
 from docopt import docopt
 from pandas import read_csv, set_option, DataFrame, concat
 from requests import get
@@ -58,11 +59,6 @@ SCHEMES = [
 ]
 
 
-LINE = 300 * '-'
-BUCKET = '/home/loic/output/farm-subsidies'
-CHUNK_SIZE = 512 * 1024
-
-
 set_option('display.expand_frame_repr', False)
 basicConfig(level=DEBUG, format='[%(module)s] %(message)s')
 log = getLogger(__name__)
@@ -71,10 +67,11 @@ log = getLogger(__name__)
 class Fragment(object):
     BASE_URL = 'https://eps.lad.gov.lv/payment_recipients?'
 
-    def __init__(self, scheme, year=2014):
+    def __init__(self, scheme, year, bucket):
         self.year = int(year)
         self.scheme = scheme
         self.description = '%s %s' % (year, scheme)
+        self.bucket = bucket
 
         self.response = None
         self.data = None
@@ -89,6 +86,8 @@ class Fragment(object):
             'utf8': u'✓'
         }
 
+        log.info('Fetching data for %s', self.description)
+
     def download(self):
         self.query.update({'eps_payment[schema]': self.scheme})
         self.response = get(self.BASE_URL, params=self.query)
@@ -97,7 +96,7 @@ class Fragment(object):
         log.debug('Saved %s', self.filepath)
 
     def _save_to_cache(self):
-        chunks = self.response.iter_content(chunk_size=CHUNK_SIZE)
+        chunks = self.response.iter_content(chunk_size=512*1024)
         with open(self.filepath, 'w+') as cache:
             for chunk in chunks:
                 if chunk:
@@ -109,7 +108,7 @@ class Fragment(object):
                    'scheme',
                    'amount']
 
-        # I ask for utf-8 and get utf-16 back... wtf?
+        # I ask the API for utf-8 and get utf-16 back... wtf?
         self.data = read_csv(self.filepath,
                              sep=';',
                              quoting=QUOTE_ALL,
@@ -128,7 +127,7 @@ class Fragment(object):
         self.data['recipient_url'] = self.url
         self.data['recipient_country'] = 'LV'
         self.data['currency'] = 'EUR'
-        self.data['year'] = 2014
+        self.data['year'] = self.year
 
         self.data['recipient_postcode'] = None
         self.data['recipient_address'] = None
@@ -138,13 +137,13 @@ class Fragment(object):
 
     def log_dataframe(self):
         log.debug('Dataframe has %s rows: \n%s\n%s\n%s',
-                  len(self.data), LINE, self.data.head(10), LINE)
+                  len(self.data), 300 * '-', self.data.head(10), 300 * '-')
 
     @property
     def filepath(self):
         parts = ['latvia', str(self.year), self.scheme]
         filename = slugify(unicode('_'.join(parts)))
-        return join(BUCKET, filename + '.csv')
+        return join(self.bucket, 'latvia', filename + '.csv')
 
     @property
     def is_cached(self):
@@ -168,12 +167,13 @@ class Fragment(object):
         return self.BASE_URL + '&'.join(parameters)
 
 
-def bulk_download(year=2014):
-    filepath = BUCKET + 'latvia' + str(year) + '.csv'
+def bulk_download(year, bucket):
+    bucket = expanduser(bucket)
+    filepath = bucket + 'latvia' + str(year) + '.csv'
     data = DataFrame()
 
     for scheme in SCHEMES:
-        fragment = Fragment(scheme, year=year)
+        fragment = Fragment(scheme, year, bucket)
 
         if not fragment.is_cached:
             fragment.download()
@@ -190,5 +190,5 @@ def bulk_download(year=2014):
 
 
 if __name__ == '__main__':
-    year_ = docopt(__doc__)['--year']
-    bulk_download(year_)
+    options = docopt(__doc__)
+    bulk_download(options['--year'], options['--bucket'])
