@@ -9,3 +9,5 @@
 *.xls
 *.xlsx
 .ipynb_checkpoints
+lv/__pycache__/
+*.ipynb
