@@ -7,7 +7,7 @@ from scrapy.item import Item, Field
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import TakeFirst, MapCompose, Join
 
-from scrapy_fs.srubbers import (filter_euro_amount,
+from scrapy_fs.scrubbers import (filter_euro_amount,
                                 filter_croatian_recipient_id,
                                 select_after_semicolon,
                                 filter_croatian_postcode,
