@@ -69,12 +69,17 @@ class GRScraper(scrapa.Scraper):
                     'limit': str(self.LIMIT),
                 })
                 url_offset = offset + self.LIMIT * num_page
+                if url_offset > total_rows:
+                    continue
                 print('Requesting offset %d' % url_offset)
                 response = await session.post('/welcome/search/%s' % url_offset, data=form_data, headers={'X-Requested-With': 'XMLHttpRequest'})
                 print('Got data for offset %d' % url_offset)
                 dom = html_parser.fromstring(response.json())
                 for tr in dom.xpath('.//table/tbody/tr'):
                     tds = [td for td in tr.xpath('./td/text()')]
+                    if not len(tds):
+                        print(str(tr))
+                        raise ValueError
                     if 'No results' in tds[1]:
                         break
                     await self.store_result('%s-%s-%s' % (year, tds[0], tds[3]),
