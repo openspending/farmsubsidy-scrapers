@@ -1,7 +1,7 @@
 """ This is the scraper for Lithuania. """
 
 
-from UserList import UserList
+# from UserList import UserList
 from scrapy import Request
 from scrapy.spiders.crawl import Spider
 from scrapy.selector import Selector
@@ -67,41 +67,41 @@ class LithuaniaSpider(Spider):
         return xpath % column
 
 
-class Recipients(UserList):
-    X_IS_HEADER = r'id="N(\w{5})"'
-    X_ROWS = '//table[@class="table"][1]/tr'
-    X_RECIPIENT_IDS = '//table[@class="table"]/tr[contains(@id, "N")]/@id'
-    X_RECIPIENT_NAMES = '//table[@class="table"]/tr[contains(@id, "N")]/td[1]/a/text()'
-
-    def __init__(self, response):
-        document = Selector(response)
-        self.rows = document.xpath(self.X_ROWS)
-
-        ids = map(self.extract, document.xpath(self.X_RECIPIENT_IDS))
-        names = map(self.extract, document.xpath(self.X_RECIPIENT_NAMES))
-        subsidies = self.collect_subsidies()
-
-        recipients = zip(ids, names, subsidies)
-        super(Recipients, self).__init__(recipients)
-
-    def collect_subsidies(self):
-        i_recipients = list(self.recipient_indices)
-        for i, i_recipient in enumerate(i_recipients):
-            if i_recipient != i_recipients[-1]:
-                next_i_recipient = i_recipients[i + 1]
-            else:
-                next_i_recipient = -1
-            yield self.rows[i_recipient + 1:next_i_recipient]
-
-    @property
-    def recipient_indices(self):
-        for i, row in enumerate(self.rows):
-            if row.re(self.X_IS_HEADER):
-                yield i
-
-    @staticmethod
-    def extract(selector):
-        return selector.extract()
+# class Recipients(UserList):
+#     X_IS_HEADER = r'id="N(\w{5})"'
+#     X_ROWS = '//table[@class="table"][1]/tr'
+#     X_RECIPIENT_IDS = '//table[@class="table"]/tr[contains(@id, "N")]/@id'
+#     X_RECIPIENT_NAMES = '//table[@class="table"]/tr[contains(@id, "N")]/td[1]/a/text()'
+#
+#     def __init__(self, response):
+#         document = Selector(response)
+#         self.rows = document.xpath(self.X_ROWS)
+#
+#         ids = map(self.extract, document.xpath(self.X_RECIPIENT_IDS))
+#         names = map(self.extract, document.xpath(self.X_RECIPIENT_NAMES))
+#         subsidies = self.collect_subsidies()
+#
+#         recipients = zip(ids, names, subsidies)
+#         super(Recipients, self).__init__(recipients)
+#
+#     def collect_subsidies(self):
+#         i_recipients = list(self.recipient_indices)
+#         for i, i_recipient in enumerate(i_recipients):
+#             if i_recipient != i_recipients[-1]:
+#                 next_i_recipient = i_recipients[i + 1]
+#             else:
+#                 next_i_recipient = -1
+#             yield self.rows[i_recipient + 1:next_i_recipient]
+#
+#     @property
+#     def recipient_indices(self):
+#         for i, row in enumerate(self.rows):
+#             if row.re(self.X_IS_HEADER):
+#                 yield i
+#
+#     @staticmethod
+#     def extract(selector):
+#         return selector.extract()
 
 
 # Translations
