@@ -21,3 +21,4 @@ class DropSubsidyFilter(object):
                 raise DropItem('%s dropped empty subsidy item "%s" for %s' % args)
             else:
                 return item
+        return item
