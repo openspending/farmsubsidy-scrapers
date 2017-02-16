@@ -8,17 +8,27 @@ from slugify import slugify
 from ..items import FarmSubsidyItem
 
 
+YEAR = 2015
+
+
 class MTSpider(Spider):
     name = "MT"
-    YEAR = 2014
+
     NUM_ONLY_RE = re.compile('^[\s\d]+$')
 
     start_urls = [
-        'https://environment.gov.mt/en/ARPA/Pages/Payments.aspx'
+        'https://msdec.gov.mt/en/arpa/Pages/Payments.aspx'
     ]
 
+    def __init__(self, year=YEAR):
+        self.year = int(year)
+
     def parse(self, response):
-        return scrapy.FormRequest.from_response(response, callback=self.search)
+        return scrapy.FormRequest.from_response(response,
+                formdata={
+                    'ctl00$ctl28$g_c7852a28_8677_47de_bf51_102e5afe2ae8$AELSg_c7852a28_8677_47de_bf51_102e5afe2ae8combo5': str(self.year)
+                },
+                callback=self.search)
 
     def search(self, response):
         current_page = response.xpath('//tr[@class="AELSpager"]//table//td[span]')
@@ -66,9 +76,12 @@ class MTSpider(Spider):
             recipient_name = data.pop('Name')
             recipient_location = data.pop('Locality')
             recipient_postcode = data.pop('Postcode')
+            year = data.pop('Financial Year', None)
+            if year is None:
+                import ipdb; ipdb.set_trace()
             data.pop('Grand_Total')
             if self.NUM_ONLY_RE.match(recipient_name):
-                recipient_id = 'MT-%s-%s' % (self.YEAR, recipient_name)
+                recipient_id = 'MT-%s-%s' % (year, recipient_name)
                 recipient_name = ''
             else:
                 recipient_id = 'MT-%s-%s' % (recipient_postcode, slugify(recipient_name))
@@ -76,9 +89,11 @@ class MTSpider(Spider):
             for scheme, amount in data.items():
                 if not amount:
                     continue
-                amount = float(amount)
+                amount = float(amount.replace(',', ''))
+                if not amount:
+                    continue
                 yield FarmSubsidyItem(
-                    year=self.YEAR,
+                    year=int(year),
                     scheme=scheme,
                     amount=amount,
                     recipient_id=recipient_id,
