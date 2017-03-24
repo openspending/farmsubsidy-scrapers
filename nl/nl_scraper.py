@@ -1,93 +1,185 @@
-# -*- encoding: utf-8 -*-
-import sys
+import asyncio
+import math
+import re
 
-from slugify import slugify
-import unicodecsv
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support import expected_conditions as EC
 
-from selenium.webdriver import PhantomJS
-from selenium.webdriver.support.wait import WebDriverWait
-
-
-START_URL = 'https://mijn.rvo.nl/europese-subsidies-{year}'
-TIMEOUT = 3
+import scrapa
+from scrapa.selenium import SeleniumMixin
 
 
-class NLScraper(object):
-    CAP_TEXT = 'Gemeenschappelijk Landbouw Beleid'
+class NLScraper(SeleniumMixin, scrapa.Scraper):
+    BASE_URL = 'https://mijn.rvo.nl/web/klantportaal-site/'
+    CONSUMER_COUNT = 1
+    ENABLE_WEBSERVER = False
 
-    def __init__(self, driver, **kwargs):
-        self.kwargs = kwargs
-        self.driver = driver
-        self.driver.implicitly_wait(3)
+    DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.113 Safari/537.36'
 
-    def wait_for_id(self, el_id):
-        WebDriverWait(self.driver, TIMEOUT).until(
-            lambda driver: driver.find_element_by_id(el_id).is_displayed()
-        )
+    TOTAL_RE = re.compile('\d+-\d+ van (\d+) resultaten')
+    POST_REST_RE = re.compile('\s*([\w-]+)\s+(.*)')
+    AMOUNT_RE = re.compile('([\d\.]+,\d+)')
 
-    def wait_for_pageload(self):
-        WebDriverWait(self.driver, TIMEOUT).until(
-            lambda driver: not driver.find_element_by_id('A0306:subsidiesForm:j_idt102').is_displayed()
-        )
+    YEARS = [2014, 2015]
 
-    def start(self, writer):
-        self.driver.get(START_URL.format(year=self.kwargs['year']))
-        self.driver.find_element_by_xpath("//select[@id='A0306:subsidiesForm:subsidie']/option[text()='%s']" % self.CAP_TEXT).click()
-        self.driver.find_element_by_id('A0306:subsidiesForm:searchButton').click()
-        limit_id = 'A0306:subsidiesForm:glbTable_rppDD'
-        self.wait_for_id(limit_id)
-        self.driver.find_element_by_xpath("//select[@id='%s']/option[text()='%s']" % (limit_id, '100')).click()
-        self.wait_for_pageload()
-        next_link = True
-        while next_link:
-            page_no = self.driver.find_element_by_xpath('.//span[@class = "ui-paginator-page ui-state-default ui-corner-all ui-state-active"]').text
-            print(page_no)
-            writer.writerows(list(self.scrape_table()))
-            next_link = self.driver.find_elements_by_xpath('.//span[@class = "ui-paginator-next ui-state-default ui-corner-all"]')
-            if next_link:
-                next_link = next_link[0]
-                next_link.click()
-                self.wait_for_pageload()
+    REGIONS = (
+        'Buiten Nederland',
+        'Drenthe',
+        'Flevoland',
+        'Friesland',
+        'Gelderland',
+        'Groningen',
+        'Limburg',
+        'Noord-Brabant',
+        'Noord-Holland',
+        'Overijssel',
+        'Utrecht',
+        'Zeeland',
+        'Zuid-Holland',
+    )
 
-    def scrape_table(self):
-        trs = self.driver.find_elements_by_xpath('.//div[@class="ui-datatable-tablewrapper"]/table/tbody/tr')
-        for tr in trs:
-            tds = tr.find_elements_by_xpath('.//td')
-            tds = [t.text for t in tds]
-            lis = tr.find_elements_by_xpath('.//td[1]/ul/li')
-            recipient_name = lis[0].text.strip()
-            address = lis[1].text.strip()
-            recipient_postcode, recipient_location = address.split(' ', 1)
-            recipient_id = 'NL-%s-%s' % (recipient_postcode, slugify(recipient_name))
-            scheme = tds[1]
-            amount = tds[2]
-            amount = amount.replace(u'€', '').strip().replace('.', '')
-            amount = float(amount.replace(',', '.'))
-            yield {
-                'amount': amount,
+    async def start(self):
+        await self.schedule_many(self.download_year_region, (
+            (x, {}) for x in self.get_combinations()
+        ))
+
+    def get_combinations(self):
+        for year in self.YEARS:
+            for region in self.REGIONS:
+                yield year, region
+
+    async def get_first_page(self, year, region):
+        already_page = 0
+        while True:
+            already_page += 1
+            has_page = await self.has_result('%s-%s-%s' % (year, region, already_page), 'page_data')
+            if not has_page:
+                break
+        return already_page
+
+    @scrapa.store
+    async def download_year_region(self, year, region):
+        def wait_for_load(session):
+            WebDriverWait(session.driver, 90).until(
+                # Wait for spinner to disappear
+                EC.invisibility_of_element_located((By.XPATH, './/div[@id="_EuSubsidies_WAR_EuSubsidiesportlet_:subsidiesForm:j_idt106"]')))
+        print('Running with', year, region)
+
+        first_page = await self.get_first_page(year, region)
+        ready = True
+
+        if first_page != 1:
+            ready = False
+
+        with self.selenium(driver_name='phantomjs') as session:
+            session.driver.set_window_size(1250, 800)
+            await session.get(self.BASE_URL + 'europese-subsidies-%s' % year)
+            print('Selecting year', year)
+            type_select = Select(session.driver.find_element_by_id("_EuSubsidies_WAR_EuSubsidiesportlet_:subsidiesForm:subsidie"))
+            type_select.select_by_visible_text('Gemeenschappelijk Landbouw Beleid')
+            region_select = Select(session.driver.find_element_by_id("_EuSubsidies_WAR_EuSubsidiesportlet_:subsidiesForm:provincie"))
+            region_select.select_by_visible_text(region)
+            session.driver.find_element_by_id('_EuSubsidies_WAR_EuSubsidiesportlet_:subsidiesForm:searchButton').click()
+            count_select = Select(session.driver.find_element_by_id("_EuSubsidies_WAR_EuSubsidiesportlet_:subsidiesForm:glbTable_rppDD"))
+            count_select.select_by_visible_text('100')
+            wait_for_load(session)
+            total = session.dom().xpath('//span[@class="ui-paginator-current"]/text()')[0]
+            total = int(self.TOTAL_RE.match(total).group(1))
+            print('Starting on page 1 (total items %d)' % total)
+            total_pages = math.ceil(total / 100)
+            print('expecting %d pages' % total_pages)
+            page_no = 1
+
+            while True:
+                try:
+                    dom = session.dom()
+                    if not ready:
+                        # Find correct page link site
+
+                        current_page = int(dom.xpath('.//span[@class="ui-paginator-page ui-state-default ui-corner-all ui-state-active"]/text()')[0])
+                        if current_page == first_page:
+                            ready = True
+                        else:
+                            available_page_nos = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span/text()')
+                            available_page_nos = [int(a) for a in available_page_nos]
+                            if first_page not in available_page_nos:
+                                print('Could not find', first_page, 'advancing...')
+                                # Fail, advance as to next pagination section
+                                last_links = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span')
+                                last_links[-1].click()
+                            else:
+                                # Success, we are ready to scrape, go to first page
+                                print('Go to', first_page, 'start scraping...')
+                                ready = True
+                                available_page = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span[text() = "%d"]' % first_page)
+                                available_page[0].click()
+                                page_no = first_page
+
+                            wait_for_load(session)
+                            continue
+
+                    print('Saving table %s' % page_no)
+                    await self.save_table(year, region, dom)
+                    page_no += 1
+                    next_links = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-next ui-state-default ui-corner-all"]')
+                    if not next_links:
+                        print('Found no more pagination links at', page_no, year, region)
+                        break
+                    print('Going to page %s' % page_no)
+                    next_links[0].click()
+                    wait_for_load(session)
+                except Exception as e:
+                    print(e)
+                    raise e
+                    # await asyncio.sleep(2)
+
+    async def save_table(self, year, region, dom):
+        dataset = []
+        rows = dom.xpath('//tbody/tr')
+        page_no = int(dom.xpath('.//span[@class="ui-paginator-page ui-state-default ui-corner-all ui-state-active"]/text()')[0])
+        for row in rows:
+            name_col, scheme_col, amount_col = row.xpath('.//td')
+            parts = name_col.xpath('.//li/text()')
+            name = parts[0].strip()
+            name_addition = ''
+            if len(parts) == 3:
+                if parts[1].startswith('('):
+                    name_addition = parts[1].replace('(', '').replace(')').strip()
+                    name_addition = ' ' + name_addition
+
+            postcode_location = parts[-1].strip().split(' ', 1)
+            postcode = None
+            if len(postcode_location) == 2:
+                postcode = postcode_location[0]
+                location = postcode_location[1]
+            else:
+                location = postcode_location[0]
+
+            scheme = scheme_col.xpath('.//text()')[0].strip()
+            amount = amount_col.xpath('.//span/text()')[0].strip()
+            amount = float(self.AMOUNT_RE.search(amount).group(1).replace('.', '').replace(',', '.'))
+            data = {
+                'recipient_name': name + name_addition,
+                'recipient_postcode': postcode,
+                'recipient_location': location,
                 'scheme': scheme,
-                'year': self.kwargs['year'],
-                'country': 'NL',
+                'amount': amount,
                 'currency': 'EUR',
-                'recipient_name': recipient_name,
-                'recipient_location': recipient_location,
-                'recipient_postcode': recipient_postcode,
-                'recipient_id': recipient_id
+                'country': 'NL',
+                'year': year,
             }
+            data['recipient_id'] = '{recipient_postcode}-{recipient_name}-{recipient_location}'.format(**data)
+            dataset.append(data)
+
+        key = '%s-%s-%s' % (year, region, page_no)
+        await self.store_result(key, 'page_data', dataset)
 
 
 def main():
-    driver = PhantomJS()
-    scraper = NLScraper(driver, year=2014)
-    print(sys.argv[1])
-    writer = unicodecsv.DictWriter(open(sys.argv[1], 'w'), ('amount', 'scheme', 'year',
-        'country', 'currency', 'recipient_name', 'recipient_postcode',
-        'recipient_id', 'recipient_location'))
-    writer.writeheader()
-    try:
-        scraper.start(writer)
-    finally:
-        driver.quit()
+    scraper = NLScraper()
+    scraper.run_from_cli()
 
 
 if __name__ == '__main__':
