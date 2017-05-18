@@ -8,7 +8,7 @@ from scrapy_fs.items import CroatiaItemLoader, FarmSubsidyItem
 
 
 class CroatiaSpider(CrawlSpider):
-    name = 'croatia'
+    name = 'HR'
     country = 'HR'
 
     paginator = LinkExtractor(allow=('page', ))
