@@ -95,30 +95,30 @@ class NLScraper(SeleniumMixin, scrapa.Scraper):
             while True:
                 try:
                     dom = session.dom()
-                    if not ready:
-                        # Find correct page link site
-
-                        current_page = int(dom.xpath('.//span[@class="ui-paginator-page ui-state-default ui-corner-all ui-state-active"]/text()')[0])
-                        if current_page == first_page:
-                            ready = True
-                        else:
-                            available_page_nos = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span/text()')
-                            available_page_nos = [int(a) for a in available_page_nos]
-                            if first_page not in available_page_nos:
-                                print('Could not find', first_page, 'advancing...')
-                                # Fail, advance as to next pagination section
-                                last_links = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span')
-                                last_links[-1].click()
-                            else:
-                                # Success, we are ready to scrape, go to first page
-                                print('Go to', first_page, 'start scraping...')
-                                ready = True
-                                available_page = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span[text() = "%d"]' % first_page)
-                                available_page[0].click()
-                                page_no = first_page
-
-                            wait_for_load(session)
-                            continue
+                    # if not ready:
+                    #     # Find correct page link site
+                    #
+                    #     current_page = int(dom.xpath('.//span[@class="ui-paginator-page ui-state-default ui-corner-all ui-state-active"]/text()')[0])
+                    #     if current_page == first_page:
+                    #         ready = True
+                    #     else:
+                    #         available_page_nos = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span')
+                    #         available_page_nos = [int(a.text) for a in available_page_nos]
+                    #         if first_page not in available_page_nos:
+                    #             print('Could not find', first_page, 'advancing...')
+                    #             # Fail, advance as to next pagination section
+                    #             last_links = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span')
+                    #             last_links[-1].click()
+                    #         else:
+                    #             # Success, we are ready to scrape, go to first page
+                    #             print('Go to', first_page, 'start scraping...')
+                    #             ready = True
+                    #             available_page = session.driver.find_elements_by_xpath('.//span[@class="ui-paginator-pages"]/span[text() = "%d"]' % first_page)
+                    #             available_page[0].click()
+                    #             page_no = first_page
+                    #
+                    #         wait_for_load(session)
+                    #         continue
 
                     print('Saving table %s' % page_no)
                     await self.save_table(year, region, dom)
