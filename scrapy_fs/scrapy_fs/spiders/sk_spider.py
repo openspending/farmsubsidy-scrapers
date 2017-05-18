@@ -10,16 +10,19 @@ from ..items import FarmSubsidyItem
 
 class SKSpider(Spider):
     name = "SK"
+    YEAR = 2014
     NUM_ONLY_RE = re.compile('^[\s\d]+$')
 
-    SEARCH_URL = 'http://www.apa.sk/index.php?offset=%s&navID=511&euod=&eudo=&order='
+    SEARCH_URL = 'http://www.apa.sk/index.php?offset=%s&navID=511&euod=&eudo=&order=&rok=' + str(YEAR)
     start_urls = [
         SEARCH_URL % '1'
     ]
 
     def parse(self, response):
-        max_page = response.xpath('.//div[@id = "strankovanie"]//a[last()]/@href')[0].extract()
-        max_page = int(max_page.split('offset=')[1].split('&')[0])
+        max_page = response.xpath('.//div[@id = "strankovanie"]//div')[0].extract()
+        match = re.search(r'\(\d+/(\d+)\)', max_page)
+        max_page = int(match.group(1))
+        print('Max pages', max_page)
         for x in self.search_page(response):
             yield x
 
@@ -27,7 +30,7 @@ class SKSpider(Spider):
             yield scrapy.Request(self.SEARCH_URL % i)
 
     def search_page(self, response):
-        trs = response.xpath('.//div[@class="row-disabled"]//table//tr')
+        trs = response.xpath('.//table//tr')
         for i, tr in enumerate(trs):
             if i == 0:
                 continue
