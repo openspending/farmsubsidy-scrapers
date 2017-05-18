@@ -10,7 +10,7 @@ from ..items import FarmSubsidyItem
 
 class SISpider(Spider):
     name = "SI"
-    YEAR = 2014
+    YEAR = 2015
     NUM_ONLY_RE = re.compile('^[\s\d]+$')
     start_urls = [
         'http://pregled.arsktrp.gov.si/prejemniki14.php'
