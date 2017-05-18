@@ -2,26 +2,32 @@ import json
 
 import scrapy
 from scrapy.spiders import Spider
+# from scrapy.shell import inspect_response
 
 from ..items import FarmSubsidyItem
 
 
 class ATSpider(Spider):
     name = "AT"
-    YEAR = 2014
-    START_URL = 'http://www.transparenzdatenbank.at/suche'
-    DETAIL_URL = 'http://www.transparenzdatenbank.at/suche/details/{id}/{year}'
-    DEFAULT_SEARCH = '{"name":"","betrag_von":"","betrag_bis":"","gemeinde":"","massnahme":null,"jahr":%s,"sort":"name"}' % YEAR
+    YEAR = 2015
+    START_URL = 'https://www.transparenzdatenbank.at/suche'
+    DETAIL_URL = 'https://www.transparenzdatenbank.at/suche/details/{id}/{year}'
+    DEFAULT_SEARCH = u'{"name":"","betrag_von":"","betrag_bis":"","gemeinde":"","massnahme":null,"jahr":%s,"sort":"name"}' % YEAR
 
     def start_requests(self):
-        return [scrapy.Request(self.START_URL,
-                                   method='POST',
-                                   headers={
-                                        'PAGINATION_CURRENT': 1,
-                                        'PAGINATION_PER_PAGE': 2000000
-                                   },
-                                   body=self.DEFAULT_SEARCH,
-                                   callback=self.get_results)]
+        # import ipdb; ipdb.set_trace()
+        yield scrapy.Request(self.START_URL,
+               method='POST',
+               headers={
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    'Accept': 'application/json, text/plain, */*',
+                    'PAGINATION_CURRENT': 1,
+                    'PAGINATION_PER_PAGE': 2000000,
+                    'Referer': 'https://www.transparenzdatenbank.at/',
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+               },
+               body=self.DEFAULT_SEARCH,
+               callback=self.get_results)
 
     def get_results(self, response):
         """
