@@ -3,4 +3,4 @@ Scraper for Latvia
 
 <https://eps.lad.gov.lv/payment_recipients>
 
-No scraper available yet.
+Download data as CSV from there. Then run notebook on them.
