@@ -62,34 +62,38 @@ class ROScraper(SeleniumMixin, scrapa.Scraper):
             print('Starting on page 1')
             page_no = 1
             while True:
-                dom = session.dom()
-                if not ready:
-                    # Find correct page link site
-                    links = session.driver.find_elements_by_xpath('.//a[contains(@href, "Page$%s")]' % first_page)
+                try:
+                    dom = session.dom()
+                    if not ready:
+                        # Find correct page link site
+                        links = session.driver.find_elements_by_xpath('.//a[contains(@href, "Page$%s")]' % first_page)
+                        if not links:
+                            print('Could not find', first_page, 'advancing...')
+                            # Fail, advance as to next pagination section
+                            session.driver.find_elements_by_xpath('.//a[contains(@href, "Page$")]')[-1].click()
+                        else:
+                            # Success, we are ready to scrape, go to first page
+                            print('Found', first_page, 'start scraping...')
+                            ready = True
+                            links[0].click()
+                            page_no = first_page
+
+                        wait_for_load(session)
+                        continue
+
+                    print('Saving table %s' % page_no)
+                    await self.save_table(year, dom)
+                    page_no += 1
+                    links = session.driver.find_elements_by_xpath('.//a[contains(@href, "Page$%s")]' % page_no)
                     if not links:
-                        print('Could not find', first_page, 'advancing...')
-                        # Fail, advance as to next pagination section
-                        session.driver.find_elements_by_xpath('.//a[contains(@href, "Page$")]')[-1].click()
-                    else:
-                        # Success, we are ready to scrape, go to first page
-                        print('Found', first_page, 'start scraping...')
-                        ready = True
-                        links[0].click()
-                        page_no = first_page
-
+                        print('Found no more pagination links at', page_no)
+                        break
+                    print('Going to page %s' % page_no)
+                    links[0].click()
                     wait_for_load(session)
-                    continue
-
-                print('Saving table %s' % page_no)
-                await self.save_table(year, dom)
-                page_no += 1
-                links = session.driver.find_elements_by_xpath('.//a[contains(@href, "Page$%s")]' % page_no)
-                if not links:
-                    print('Found no more pagination links at', page_no)
-                    break
-                print('Going to page %s' % page_no)
-                links[0].click()
-                wait_for_load(session)
+                except Exception as e:
+                    print(e)
+                    await asyncio.sleep(2)
 
     async def save_table(self, year, dom):
         # 'Denumire beneficiar	Cod unic	Localitate	Fond	Masura	Cuantum'.split()
