@@ -8,15 +8,15 @@ from ..items import FarmSubsidyItem
 
 class CZSpider(Spider):
     name = "CZ"
-    YEAR = 2014
+    YEAR = 2015
 
     AMOUNT_RE = re.compile('[^\d\.]')
     BAD_NAME = u'ID not available'
 
-    PAGE_URL = 'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries?asc=asc&page={page}&sortby=%2FBIC%2FZC_F201&ino=0'
+    PAGE_URL = 'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries?asc=asc&page={page}&sortby=%2FBIC%2FZC_F201&ino=0&year=' + str(YEAR)
 
     start_urls = [
-        'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries'
+        'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries?name=&nuts4=&obec=&opatr=&cod=&cdo=&filter=search&page=1&asc=asc&sortby=%2FBIC%2FZC_F201&year=' + str(YEAR)
     ]
 
     def parse(self, response):
@@ -26,7 +26,7 @@ class CZSpider(Spider):
             yield scrapy.Request(self.PAGE_URL.format(page=i), callback=self.parse_page)
 
     def parse_page(self, response):
-        for href in response.xpath('.//div[@class="section"]/table//tr/td[1]//a/@href'):
+        for href in response.xpath('.//div[@class="container-table"]/table//tr/td[1]//a/@href'):
             url = response.urljoin(href.extract())
             yield scrapy.Request(url, callback=self.parse_detail)
 
@@ -46,7 +46,7 @@ class CZSpider(Spider):
         else:
             recipient_location = ''
 
-        for tr in response.xpath('.//div[@class="section"]/table//tr'):
+        for tr in response.xpath('.//div[@class="section"]//table//tr'):
             content_list = [c.extract() for c in tr.xpath('./td/text()')]
             if not content_list:
                 continue
