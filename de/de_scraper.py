@@ -19,7 +19,7 @@ def parse_amount(amount):
 
 
 class DEScraper(Scraper):
-    BASE_URL = 'http://agrar-fischerei-zahlungen.de/afig/Suche'
+    BASE_URL = 'https://agrar-fischerei-zahlungen.de/Suche'
 
     @async
     def start(self):

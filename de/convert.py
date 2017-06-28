@@ -1,8 +1,8 @@
+import csv
 import json
 import sys
 
 import dataset
-import unicodecsv as csv
 
 
 def clean_location(location):
@@ -10,7 +10,7 @@ def clean_location(location):
     return location
 
 
-def main(filename):
+def main():
     db = dataset.connect('sqlite:///de_data.db')
     writer = csv.DictWriter(sys.stdout, ('recipient_name', 'recipient_id',
             'recipient_postcode', 'recipient_location', 'scheme', 'amount',
@@ -34,4 +34,4 @@ def main(filename):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    main()
