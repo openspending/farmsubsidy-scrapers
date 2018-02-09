@@ -1,7 +1,8 @@
 from collections import defaultdict
 import os
+import string
 
-from scrapa import Scraper, async
+import scrapa
 from scrapa.forms import get_form_data
 from scrapa.storage import DatabaseStorage
 
@@ -18,31 +19,30 @@ def parse_amount(amount):
     return float(amount)
 
 
-class DEScraper(Scraper):
+class DEScraper(scrapa.Scraper):
     BASE_URL = 'https://agrar-fischerei-zahlungen.de/Suche'
+    YEAR = 'vorjahr'
 
-    @async
-    def start(self):
-        yield from self.schedule_many(self.search, self.get_plzs())
+    async def start(self):
+        await self.schedule_many(self.search, self.get_plzs())
         print('Done adding all PLZ searches')
 
     def get_plzs(self):
-        with open('plz.txt') as f:
-            for line in f:
-                plz = line.strip()
-                if plz:
-                    yield plz
+        for i in range(0, 100000):
+            yield str(i).zfill(5) + '%'
+        for l in string.ascii_letters:
+            yield l + '%'
 
-    @async(store=True)
-    def search(self, plz):
+    @scrapa.store
+    async def search(self, plz):
         page = 1
         per_page = 50
         count, count_beg = 1000, 1000
         while True:
             offset = str(per_page * (page - 1))
             if page == 1:
-                response = yield from self.post(data={
-                    'jahr': 'jahr',
+                response = await self.post(data={
+                    'jahr': self.YEAR,
                     'name': '',
                     'plz': plz,
                     'ort': '',
@@ -59,8 +59,8 @@ class DEScraper(Scraper):
                 count = form_data['count']
                 count_beg = form_data['countBeg']
 
-            response = yield from self.post(data={
-                'jahr': 'jahr',
+            response = await self.post(data={
+                'jahr': self.YEAR,
                 'name': '',
                 'ort': '',
                 'plz': plz,
@@ -87,7 +87,7 @@ class DEScraper(Scraper):
             dom = response.dom()
             buttons = dom.xpath('.//button[@name="showBeg"]')
             button_values = [x.attrib['value'] for x in buttons]
-            yield from self.schedule_many(self.detail, button_values)
+            await self.schedule_many(self.detail, button_values)
             nav_text = dom.xpath('.//div[@id="listNavRight"]')[0].text_content()
             print('%s lines for %s - now on page %d' % (count, plz, page))
             if 'von %d' % page in nav_text:
@@ -95,36 +95,38 @@ class DEScraper(Scraper):
             page += 1
             print('Going to page %d of %s' % (page, plz))
 
-    @async(store=True)
-    def detail(self, uuid):
-        response = yield from self.post(data={
-            'suchtypBetrag': 'betrag_massnahme',
-            'operator': 'eq',
-            'betrag': '',
-            'suchtypEgfl': 'egfl_alle',
-            'suchtypEler': 'eler_alle',
-            'showBeg': uuid
-        })
-        dom = response.dom()
-        jahr = int(dom.xpath('.//h1[@id="titel"]')[0].text.strip().split(' ')[-1])
-        h2 = dom.xpath('.//div[@id="beguenstigter"]//h2')[0].text
-        h3s = dom.xpath('.//div[@id="beguenstigter"]//h3')
-        amounts = dom.xpath('.//div[@id="beguenstigter"]//span[@class="betrag"]')
-        result = defaultdict(list)
-        for massnahme, amount in zip(h3s, amounts):
-            amount = parse_amount(amount.text)
-            result[massnahme.text_content().strip()].append(amount)
-        total = parse_amount(amounts[-2].text)
-        name, location = h2.rsplit(' – ', 1)
-        plz, location = location.split(' ', 1)
-        yield from self.store_result(uuid, 'recipient', {
-            'jahr': jahr,
-            'name': name,
-            'plz': plz,
-            'location': location,
-            'total': total,
-            'schemes': result
-        })
+    @scrapa.store
+    async def detail(self, uuid):
+        with self.get_session() as session:
+            await session.get()
+            response = await session.post(data={
+                'suchtypBetrag': 'betrag_massnahme',
+                'operator': 'eq',
+                'betrag': '',
+                'suchtypEgfl': 'egfl_alle',
+                'suchtypEler': 'eler_alle',
+                'showBeg': uuid
+            })
+            dom = response.dom()
+            jahr = int(dom.xpath('.//h1[@id="titel"]')[0].text.strip().split(' ')[-1])
+            h2 = dom.xpath('.//div[@id="beguenstigter"]//h2')[0].text
+            h3s = dom.xpath('.//div[@id="beguenstigter"]//h3')
+            amounts = dom.xpath('.//div[@id="beguenstigter"]//span[@class="betrag"]')
+            result = defaultdict(list)
+            for massnahme, amount in zip(h3s, amounts):
+                amount = parse_amount(amount.text)
+                result[massnahme.text_content().strip()].append(amount)
+            total = parse_amount(amounts[-2].text)
+            name, location = h2.rsplit(' – ', 1)
+            plz, location = location.split(' ', 1)
+            await self.store_result(uuid, 'recipient', {
+                'jahr': jahr,
+                'name': name,
+                'plz': plz,
+                'location': location,
+                'total': total,
+                'schemes': result
+            })
 
 
 def main():
