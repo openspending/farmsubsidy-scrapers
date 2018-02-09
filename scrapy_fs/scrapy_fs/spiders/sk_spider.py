@@ -10,13 +10,15 @@ from ..items import FarmSubsidyItem
 
 class SKSpider(Spider):
     name = "SK"
-    YEAR = 2014
     NUM_ONLY_RE = re.compile('^[\s\d]+$')
 
-    SEARCH_URL = 'http://www.apa.sk/index.php?offset=%s&navID=511&euod=&eudo=&order=&rok=' + str(YEAR)
-    start_urls = [
-        SEARCH_URL % '1'
-    ]
+    def __init__(self, year=None):
+        self.year = int(year)
+
+    def start_requests(self):
+        self.SEARCH_URL = 'http://www.apa.sk/index.php?offset=%s&navID=511&euod=&eudo=&order=&rok=' + str(self.year)
+        url = self.SEARCH_URL % '1'
+        yield scrapy.Request(url)
 
     def parse(self, response):
         max_page = response.xpath('.//div[@id = "strankovanie"]//div')[0].extract()

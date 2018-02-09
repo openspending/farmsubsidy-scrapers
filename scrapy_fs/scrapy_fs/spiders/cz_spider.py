@@ -8,16 +8,17 @@ from ..items import FarmSubsidyItem
 
 class CZSpider(Spider):
     name = "CZ"
-    YEAR = 2015
 
     AMOUNT_RE = re.compile('[^\d\.]')
     BAD_NAME = u'ID not available'
 
-    PAGE_URL = 'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries?asc=asc&page={page}&sortby=%2FBIC%2FZC_F201&ino=0&year=' + str(YEAR)
+    def __init__(self, year=None):
+        self.year = int(year)
+        self.PAGE_URL = 'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries?asc=asc&page={page}&sortby=%2FBIC%2FZC_F201&ino=0&year=' + str(self.year)
 
-    start_urls = [
-        'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries?name=&nuts4=&obec=&opatr=&cod=&cdo=&filter=search&page=1&asc=asc&sortby=%2FBIC%2FZC_F201&year=' + str(YEAR)
-    ]
+    def start_requests(self):
+        url = 'http://www.szif.cz/irj/portal/eng/list_of_beneficiaries?name=&nuts4=&obec=&opatr=&cod=&cdo=&filter=search&page=1&asc=asc&sortby=%2FBIC%2FZC_F201&year=' + str(self.year)
+        yield scrapy.Request(url) # for example if domains is a single URL
 
     def parse(self, response):
         page_count = response.xpath('.//div[@class = "pagination"][1]//ul//li[a/@class = "show-loading"][last()]/a/text()')[0].extract()

@@ -170,7 +170,7 @@ class NLScraper(SeleniumMixin, scrapa.Scraper):
                 'country': 'NL',
                 'year': year,
             }
-            data['recipient_id'] = '{recipient_postcode}-{recipient_name}-{recipient_location}'.format(**data)
+            data['recipient_id'] = 'NL-{recipient_postcode}-{recipient_name}-{recipient_location}'.format(**data)
             dataset.append(data)
 
         key = '%s-%s-%s' % (year, region, page_no)

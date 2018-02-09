@@ -10,7 +10,7 @@ from scrapy_fs.items import LithuanianLoader, FarmSubsidyItem
 
 
 class LithuaniaSpider(Spider):
-    name = 'lithuania'
+    name = 'LT'
     country = 'LT'
     allowed_domains = ['portal.nma.lt']
 
@@ -63,45 +63,45 @@ class LithuaniaSpider(Spider):
 
     def build_amount_xpath(self, column):
         # Tables for 2013 & 2014 have subsidies in both LTL and EUR.
-        xpath = './td[%s]/text()' if self.year == 2015 else './td[%s]/table/tr[2]/td[1]/text()'
+        xpath = './td[%s]/text()' if self.year >= 2014 else './td[%s]/table/tr[2]/td[1]/text()'
         return xpath % column
 
 
-# class Recipients(UserList):
-#     X_IS_HEADER = r'id="N(\w{5})"'
-#     X_ROWS = '//table[@class="table"][1]/tr'
-#     X_RECIPIENT_IDS = '//table[@class="table"]/tr[contains(@id, "N")]/@id'
-#     X_RECIPIENT_NAMES = '//table[@class="table"]/tr[contains(@id, "N")]/td[1]/a/text()'
-#
-#     def __init__(self, response):
-#         document = Selector(response)
-#         self.rows = document.xpath(self.X_ROWS)
-#
-#         ids = map(self.extract, document.xpath(self.X_RECIPIENT_IDS))
-#         names = map(self.extract, document.xpath(self.X_RECIPIENT_NAMES))
-#         subsidies = self.collect_subsidies()
-#
-#         recipients = zip(ids, names, subsidies)
-#         super(Recipients, self).__init__(recipients)
-#
-#     def collect_subsidies(self):
-#         i_recipients = list(self.recipient_indices)
-#         for i, i_recipient in enumerate(i_recipients):
-#             if i_recipient != i_recipients[-1]:
-#                 next_i_recipient = i_recipients[i + 1]
-#             else:
-#                 next_i_recipient = -1
-#             yield self.rows[i_recipient + 1:next_i_recipient]
-#
-#     @property
-#     def recipient_indices(self):
-#         for i, row in enumerate(self.rows):
-#             if row.re(self.X_IS_HEADER):
-#                 yield i
-#
-#     @staticmethod
-#     def extract(selector):
-#         return selector.extract()
+class Recipients(object):
+    X_IS_HEADER = r'id="N(\w{5})"'
+    X_ROWS = '//table[@class="table"][1]/tr'
+    X_RECIPIENT_IDS = '//table[@class="table"]/tr[contains(@id, "N")]/@id'
+    X_RECIPIENT_NAMES = '//table[@class="table"]/tr[contains(@id, "N")]/td[1]/a/text()'
+
+    def __init__(self, response):
+        document = Selector(response)
+        self.rows = document.xpath(self.X_ROWS)
+
+        ids = map(self.extract, document.xpath(self.X_RECIPIENT_IDS))
+        names = map(self.extract, document.xpath(self.X_RECIPIENT_NAMES))
+        subsidies = self.collect_subsidies()
+
+        recipients = zip(ids, names, subsidies)
+        super(Recipients, self).__init__(recipients)
+
+    def collect_subsidies(self):
+        i_recipients = list(self.recipient_indices)
+        for i, i_recipient in enumerate(i_recipients):
+            if i_recipient != i_recipients[-1]:
+                next_i_recipient = i_recipients[i + 1]
+            else:
+                next_i_recipient = -1
+            yield self.rows[i_recipient + 1:next_i_recipient]
+
+    @property
+    def recipient_indices(self):
+        for i, row in enumerate(self.rows):
+            if row.re(self.X_IS_HEADER):
+                yield i
+
+    @staticmethod
+    def extract(selector):
+        return selector.extract()
 
 
 # Translations

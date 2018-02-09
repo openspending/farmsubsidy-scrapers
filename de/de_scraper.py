@@ -24,14 +24,16 @@ class DEScraper(scrapa.Scraper):
     YEAR = 'vorjahr'
 
     async def start(self):
-        await self.schedule_many(self.search, self.get_plzs())
+        await self.schedule_many_batch(self.search, self.get_plzs())
         print('Done adding all PLZ searches')
 
     def get_plzs(self):
         for i in range(0, 100000):
             yield str(i).zfill(5) + '%'
+        for i in range(0, 10000):
+            yield str(i).zfill(4)
         for l in string.ascii_letters:
-            yield l + '%'
+            yield '%' + l + '%'
 
     @scrapa.store
     async def search(self, plz):
@@ -51,6 +53,11 @@ class DEScraper(scrapa.Scraper):
                     'betrag': '',
                     'suchtypEgfl': 'egfl_alle'
                 })
+
+                text = response.text()
+                if 'Es liegen mehr als 1500 Ergebnisse vor' in text:
+                    raise ValueError('Search %s result in too many!' % plz)
+
                 dom = response.dom()
                 form_data = get_form_data(dom.xpath('.//form[@id="data"]')[0])
                 if 'count' not in form_data:
@@ -86,25 +93,54 @@ class DEScraper(scrapa.Scraper):
             })
             dom = response.dom()
             buttons = dom.xpath('.//button[@name="showBeg"]')
-            button_values = [x.attrib['value'] for x in buttons]
-            await self.schedule_many(self.detail, button_values)
+            args = [(x.attrib['value'], plz, page) for x in buttons]
+            await self.schedule_many(self.detail, args)
             nav_text = dom.xpath('.//div[@id="listNavRight"]')[0].text_content()
-            print('%s lines for %s - now on page %d' % (count, plz, page))
-            if 'von %d' % page in nav_text:
+            nav_text = nav_text.strip() + '|'
+            print('%s lines for %s - now on page %d' % (count_beg, plz, page))
+            if 'von %d|' % page in nav_text:
                 break
             page += 1
             print('Going to page %d of %s' % (page, plz))
 
     @scrapa.store
-    async def detail(self, uuid):
+    async def detail(self, uuid, plz, page):
         with self.get_session() as session:
             await session.get()
+            response = await self.post(data={
+                    'jahr': self.YEAR,
+                    'name': '',
+                    'plz': plz,
+                    'ort': '',
+                    'suchtypBetrag': 'betrag_massnahme',
+                    'operator': 'eq',
+                    'betrag': '',
+                    'suchtypEgfl': 'egfl_alle'
+            })
             response = await session.post(data={
+                'jahr': self.YEAR,
+                'name': '',
+                'ort': '',
+                'plz': plz,
                 'suchtypBetrag': 'betrag_massnahme',
                 'operator': 'eq',
                 'betrag': '',
                 'suchtypEgfl': 'egfl_alle',
                 'suchtypEler': 'eler_alle',
+                'viewOffset': '50',
+                'viewOrderdir': 'asc',
+                'viewOrderby': 'zahlungsempfaenger',
+                'viewCount': '508',
+                'viewCountBeg': '148',
+                'viewLimit': '50',
+                'offset': '50',
+                'dir': 'asc',
+                'order': 'zahlungsempfaenger',
+                'count': '508',
+                'countBeg': '148',
+                'prevLimit': '50',
+                'limit': '50',
+                'seite': str(page),
                 'showBeg': uuid
             })
             dom = response.dom()

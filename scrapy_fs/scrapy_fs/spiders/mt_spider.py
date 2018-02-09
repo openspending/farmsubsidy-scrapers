@@ -72,13 +72,15 @@ class MTSpider(Spider):
                     })
                 return
             tds = [x.extract().strip() for x in tr.xpath('./td//text()')]
+            if len(tds) != len(keys):
+                return
             data = dict(zip(keys, tds))
             recipient_name = data.pop('Name')
             recipient_location = data.pop('Locality')
             recipient_postcode = data.pop('Postcode')
             year = data.pop('Financial Year', None)
             if year is None:
-                import ipdb; ipdb.set_trace()
+                return
             data.pop('Grand_Total')
             if self.NUM_ONLY_RE.match(recipient_name):
                 recipient_id = 'MT-%s-%s' % (year, recipient_name)
