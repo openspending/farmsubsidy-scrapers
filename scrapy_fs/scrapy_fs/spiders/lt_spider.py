@@ -69,9 +69,9 @@ class LithuaniaSpider(Spider):
 
 class Recipients(object):
     X_IS_HEADER = r'id="N(\w{5})"'
-    X_ROWS = '//table[@class="table"][1]/tr'
-    X_RECIPIENT_IDS = '//table[@class="table"]/tr[contains(@id, "N")]/@id'
-    X_RECIPIENT_NAMES = '//table[@class="table"]/tr[contains(@id, "N")]/td[1]/a/text()'
+    X_ROWS = '//table[1]//tr'
+    X_RECIPIENT_IDS = '//table[1]//tr[contains(@id, "N")]/@id'
+    X_RECIPIENT_NAMES = '//table[1]//tr[contains(@id, "N")]/td[1]/a/text()'
 
     def __init__(self, response):
         document = Selector(response)
@@ -114,9 +114,7 @@ class TablePaginator(object):
     query = {
         'pa': 'pl',
         'pTipas': 'p',
-        'programos_kodas':
-        'KP13', 'action':
-        'Search',
+        'programos_kodas': 'KP13',
         'psl_nr': '1',
         'fin_metai': '2015'
     }
