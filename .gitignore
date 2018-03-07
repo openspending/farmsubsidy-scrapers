@@ -6,7 +6,9 @@
 .pydevproject
 .settings
 *.csv
+*.csv.gz
 *.xls
+*.jpg
 *.xlsx
 .ipynb_checkpoints
 lv/__pycache__/
