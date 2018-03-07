@@ -8,7 +8,7 @@ from slugify import slugify
 from ..items import FarmSubsidyItem
 
 
-YEAR = 2015
+YEAR = 2016
 
 
 class MTSpider(Spider):
