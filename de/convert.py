@@ -14,7 +14,7 @@ def main():
     db = dataset.connect('sqlite:///de_data.db')
     writer = csv.DictWriter(sys.stdout, ('recipient_name', 'recipient_id',
             'recipient_postcode', 'recipient_location', 'scheme', 'amount',
-            'currency', 'year', 'country'))
+            'currency', 'year', 'country'),delimiter=';')
     writer.writeheader()
     for line in db['scrapa_result']:
         data = json.loads(line['result'])
