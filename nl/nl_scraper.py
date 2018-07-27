@@ -18,11 +18,11 @@ class NLScraper(SeleniumMixin, scrapa.Scraper):
 
     DEFAULT_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.113 Safari/537.36'
 
-    TOTAL_RE = re.compile('\d+-\d+ van (\d+) resultaten')
-    POST_REST_RE = re.compile('\s*([\w-]+)\s+(.*)')
-    AMOUNT_RE = re.compile('([\d\.]+,\d+)')
+    TOTAL_RE = re.compile(r'\d+-\d+ van (\d+) resultaten')
+    POST_REST_RE = re.compile(r'\s*([\w-]+)\s+(.*)')
+    AMOUNT_RE = re.compile(r'(\-?[\d\.]+,\d+)')
 
-    YEARS = [2014, 2015]
+    YEARS = [2016, 2017]
 
     REGIONS = (
         'Buiten Nederland',
@@ -158,7 +158,7 @@ class NLScraper(SeleniumMixin, scrapa.Scraper):
                 location = postcode_location[0]
 
             scheme = scheme_col.xpath('.//text()')[0].strip()
-            amount = amount_col.xpath('.//span/text()')[0].strip()
+            amount = amount_col.xpath('.//span//text()')[0].strip()
             amount = float(self.AMOUNT_RE.search(amount).group(1).replace('.', '').replace(',', '.'))
             data = {
                 'recipient_name': name + name_addition,
