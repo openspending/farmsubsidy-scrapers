@@ -47,7 +47,7 @@ class CZSpider(Spider):
         else:
             recipient_location = ''
 
-        for tr in response.xpath('.//div[@class="section"]//table//tr'):
+        for tr in response.xpath('.//div[@class="section"]//table[1]//tr'):
             content_list = [c.extract() for c in tr.xpath('./td/text()')]
             if not content_list:
                 continue

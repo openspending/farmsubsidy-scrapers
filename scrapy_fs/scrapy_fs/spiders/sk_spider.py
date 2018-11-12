@@ -36,7 +36,7 @@ class SKSpider(Spider):
         for i, tr in enumerate(trs):
             if i == 0:
                 continue
-            tds = [x.extract() for x in tr.xpath('./td//text()')]
+            tds = [x.xpath('.//text()').extract() for x in tr.xpath('./td')]
             scheme = tds[3].strip()
             year = int(tds[5].strip())
             amount = float(tds[4])

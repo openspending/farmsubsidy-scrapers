@@ -9,7 +9,7 @@ from ..items import FarmSubsidyItem
 
 class ATSpider(Spider):
     name = "AT"
-    YEAR = 2016
+    YEAR = 2017
     START_URL = 'https://www.transparenzdatenbank.at/suche'
     DETAIL_URL = 'https://www.transparenzdatenbank.at/suche/details/{id}/{year}'
     DEFAULT_SEARCH = u'{"name":"","betrag_von":"","betrag_bis":"","gemeinde":"","massnahme":null,"jahr":%s,"sort":"name"}' % YEAR

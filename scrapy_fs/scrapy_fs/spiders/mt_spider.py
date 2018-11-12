@@ -8,7 +8,7 @@ from slugify import slugify
 from ..items import FarmSubsidyItem
 
 
-YEAR = 2016
+YEAR = 2017
 
 
 class MTSpider(Spider):
@@ -24,11 +24,20 @@ class MTSpider(Spider):
         self.year = int(year)
 
     def parse(self, response):
-        return scrapy.FormRequest.from_response(response,
-                formdata={
-                    'ctl00$ctl28$g_c7852a28_8677_47de_bf51_102e5afe2ae8$AELSg_c7852a28_8677_47de_bf51_102e5afe2ae8combo5': str(self.year)
-                },
-                callback=self.search)
+        return scrapy.FormRequest.from_response(
+            response,
+            formdata={
+                'ctl00$ctl28$g_c7852a28_8677_47de_bf51_102e5afe2ae8$AELSg_c7852a28_8677_47de_bf51_102e5afe2ae8combo5': str(self.year),
+                '__SCROLLPOSITIONX': '0',
+                '__SCROLLPOSITIONY': '0',
+                '__LASTFOCUS': '',
+                'search': '0',
+                '__EVENTARGUMENT': '',
+                'hiddenInputToUpdateATBuffer_CommonToolkitScripts': '1',
+                '__EVENTTARGET': '',
+                'InputKeywords': 'Search',
+            },
+            callback=self.search)
 
     def search(self, response):
         current_page = response.xpath('//tr[@class="AELSpager"]//table//td[span]')

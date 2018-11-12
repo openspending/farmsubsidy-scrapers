@@ -89,7 +89,7 @@ class CroatiaSpider(CrawlSpider):
             recipient.add_xpath('recipient_postcode', self.X_POSTCODE)
             recipient.add_xpath('recipient_location', self.X_CITY)
 
-            recipient.add_value('recipient_id', response.url)
+            recipient.add_value('recipient_id', 'HR-%s' % response.url)
             recipient.add_value('recipient_url', response.url)
 
             yield self._parse_subsidy(row, recipient)
