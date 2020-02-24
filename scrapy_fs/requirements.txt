@@ -2,7 +2,7 @@ appdirs==1.4.0
 appnope==0.1.0
 attrs==16.3.0
 Automat==0.5.0
-bleach==1.5.0
+bleach==3.1.1
 cffi==1.9.1
 constantly==15.1.0
 cryptography==1.7.2
