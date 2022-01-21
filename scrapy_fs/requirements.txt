@@ -13,7 +13,7 @@ html5lib==0.9999999
 idna==2.2
 incremental==16.10.1
 ipykernel==4.5.2
-ipython==5.2.2
+ipython==7.16.3
 ipython-genutils==0.1.0
 ipywidgets==5.2.2
 Jinja2==2.9.5
