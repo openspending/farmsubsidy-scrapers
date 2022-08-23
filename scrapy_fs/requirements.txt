@@ -25,7 +25,7 @@ jupyter-core==4.3.0
 lxml==3.7.2
 MarkupSafe==0.23
 mistune==0.7.3
-nbconvert==5.1.1
+nbconvert==6.5.1
 nbformat==4.2.0
 notebook==4.4.1
 numpy==1.12.0
