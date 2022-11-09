@@ -13,11 +13,11 @@ NEWSPIDER_MODULE = 'scrapy_fs.spiders'
 
 # AUTOTHROTTLE_ENABLED = True
 
-ITEM_PIPELINES = {
-    'scrapy_fs.pipelines.DropSubsidyFilter': 100,
-}
+# ITEM_PIPELINES = {
+#     'scrapy_fs.pipelines.DropSubsidyFilter': 100,
+# }
 
 USER_AGENT = 'Farm subsidy scraper bot (http://farmsubsidy.openspending.org/)'
 
-FEED_URI = 's3://eu-farm-subsidies/%(country)s_%(year)s_%(time)s.csv'
-FEED_FORMAT = 'csv'
+# For EE
+URLLENGTH_LIMIT=6000
