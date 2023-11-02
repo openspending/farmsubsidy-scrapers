@@ -8,4 +8,6 @@ Scraper for Belgium
 
 [Scheme Documentation](http://www.belpa.be/pub/PDF/73_2009_EN.pdf)
 
-Scraper notebook available.
+Scraper notebook available: use `./be_scraper.ipynb` (works 2023)
+
+The scraper run might break from time to time due to IP rate limiting and/or too many requests.
