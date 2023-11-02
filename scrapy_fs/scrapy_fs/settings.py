@@ -17,7 +17,7 @@ NEWSPIDER_MODULE = 'scrapy_fs.spiders'
 #     'scrapy_fs.pipelines.DropSubsidyFilter': 100,
 # }
 
-USER_AGENT = 'Farm subsidy scraper bot (http://farmsubsidy.openspending.org/)'
+USER_AGENT = 'Farm subsidy scraper bot (https://farmsubsidy.org)'
 
 # For EE
 URLLENGTH_LIMIT=6000
