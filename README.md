@@ -13,7 +13,7 @@ Developer Documentation
 
 Developer documentation for both website and scrapers can be found at http://farmsubsidy.readthedocs.org.
 
-[Member states data sites](http://ec.europa.eu/agriculture/cap-funding/beneficiaries/shared/index_en.htm)
+[Member states data sites](https://agriculture.ec.europa.eu/common-agricultural-policy/financing-cap/beneficiaries_en)
 
 
 [Financial Reports](http://ec.europa.eu/agriculture/cap-funding/financial-reports/index_en.htm)
