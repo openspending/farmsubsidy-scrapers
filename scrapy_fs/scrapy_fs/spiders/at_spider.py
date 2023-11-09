@@ -9,10 +9,11 @@ from ..items import FarmSubsidyItem
 
 class ATSpider(Spider):
     name = "AT"
-    YEAR = 2017
-    START_URL = 'https://www.transparenzdatenbank.at/suche'
-    DETAIL_URL = 'https://www.transparenzdatenbank.at/suche/details/{id}/{year}'
-    DEFAULT_SEARCH = u'{"name":"","betrag_von":"","betrag_bis":"","gemeinde":"","massnahme":null,"jahr":%s,"sort":"name"}' % YEAR
+    YEAR = 2022
+    START_URL = 'https://www.transparenzdatenbank.at/search'
+    # DETAIL_URL = 'https://www.transparenzdatenbank.at/suche/details/{id}/{year}'
+    DETAIL_URL = 'https://www.transparenzdatenbank.at/search?laufnr={laufnr}&jahr={year}'
+    DEFAULT_SEARCH = '{"zahlungsempfaenger":"","betrag_von":null,"betrag_bis":null,"gemeinde":"","massnahme":0,"jahr":%s,"page":0,"size":200000,"sort":"zahlungsempfaenger","asc":true}' % YEAR
 
     def __init__(self, year=YEAR):
         self.year = int(year)
@@ -39,19 +40,21 @@ class ATSpider(Spider):
         @url http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/
         @scrapes name
         """
-        all_items = json.loads(response.body)
+        data = json.loads(response.body)
+        all_items = data["data"]
         for item in all_items:
+            # print(item)
             item_data = dict(
                 country='AT', currency='EUR',
-                year=item['jahr'],
-                recipient_name=item['name'],
+                year=item['hhj'],
+                recipient_name=item['zahlungsempfaenger'],
                 recipient_id='AT-%s' % item['id'],
                 recipient_location=item['gemeinde'],
-                recipient_postcode=str(item['plz']),
-                amount=item['betrag'],
+                recipient_postcode=str(item['postleitzahl']),
+                amount=item['saldo'],
             )
-            yield scrapy.Request(self.DETAIL_URL.format(id=item['id'], year=item['jahr']),
-                                       callback=self.get_detail, meta={'item_data': item_data})
+            yield scrapy.Request(self.DETAIL_URL.format(laufnr=item['laufnr'], year=item['hhj']),
+                                 callback=self.get_detail, meta={'item_data': item_data})
 
     def get_detail(self, response):
         item_data = response.meta['item_data']
@@ -59,6 +62,6 @@ class ATSpider(Spider):
         for payment in all_payments:
             new_item = dict(item_data)
             new_item['amount'] = payment['betrag']
-            new_item['scheme'] = u'{bezeichnung} ({id})'.format(**payment)
+            new_item['scheme'] = u'{bezeichnung} ({manacode})'.format(**payment)
 
             yield FarmSubsidyItem(**new_item)
